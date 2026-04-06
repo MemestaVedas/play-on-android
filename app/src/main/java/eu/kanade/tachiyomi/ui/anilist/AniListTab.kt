@@ -1,5 +1,8 @@
 package eu.kanade.tachiyomi.ui.anilist
 
+import android.content.res.Resources
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -7,11 +10,17 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.TabOptions
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toBitmap
 import eu.kanade.presentation.anilist.home.AnilistHomeScreen
 import eu.kanade.presentation.util.Tab
 import eu.kanade.tachiyomi.R
@@ -28,7 +37,7 @@ data object AniListTab : Tab {
             return TabOptions(
                 index = 2u,
                 title = "AniList",
-                icon = painterResource(R.drawable.ic_tracker_anilist_nav),
+                icon = rememberAniListTabPainter(),
             )
         }
 
@@ -62,5 +71,25 @@ data object AniListTab : Tab {
         LaunchedEffect(Unit) {
             (context as? MainActivity)?.ready = true
         }
+    }
+}
+
+@Composable
+private fun rememberAniListTabPainter(): BitmapPainter {
+    val context = LocalContext.current
+    return remember(context) {
+        val drawable = ContextCompat.getDrawable(context, R.drawable.ic_tracker_anilist)
+            ?: throw Resources.NotFoundException()
+        val sourceBitmap = drawable.toBitmap()
+        val scale = 0.78f
+        val targetWidth = (sourceBitmap.width / scale).toInt()
+        val targetHeight = (sourceBitmap.height / scale).toInt()
+        val outputBitmap = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888)
+        Canvas(outputBitmap).apply {
+            val left = (targetWidth - sourceBitmap.width) / 2f
+            val top = (targetHeight - sourceBitmap.height) / 2f
+            drawBitmap(sourceBitmap, left, top, null)
+        }
+        BitmapPainter(outputBitmap.asImageBitmap())
     }
 }
