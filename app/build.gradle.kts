@@ -8,6 +8,7 @@ plugins {
     id("mihon.android.application.compose")
     id("com.github.zellius.shortcut-helper")
     kotlin("plugin.serialization")
+    alias(libs.plugins.apollo)
     alias(libs.plugins.aboutLibraries)
 }
 
@@ -239,6 +240,9 @@ dependencies {
     implementation(libs.rxjava)
 
     // Networking
+    implementation(libs.apollo.runtime)
+    implementation(libs.apollo.normalized.cache)
+    implementation(libs.apollo.api)
     implementation(libs.bundles.okhttp)
     implementation(libs.okio)
     implementation(libs.conscrypt.android) // TLS 1.3 support for Android < 10
@@ -324,6 +328,16 @@ androidComponents {
         // Only excluding in standard flavor because this breaks
         // Layout Inspector's Compose tree
         it.packaging.resources.excludes.add("META-INF/*.version")
+    }
+}
+
+apollo {
+    generateSourcesDuringGradleSync.set(false)
+    service("anilist") {
+        packageName.set("eu.kanade.tachiyomi.data.track.anilist.apollo")
+        generateFragmentImplementations.set(true)
+        mapScalarToKotlinInt("FuzzyDateInt")
+        mapScalarToKotlinString("CountryCode")
     }
 }
 
