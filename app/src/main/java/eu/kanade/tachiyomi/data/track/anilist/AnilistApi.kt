@@ -5,7 +5,6 @@ import androidx.core.net.toUri
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
 import com.apollographql.apollo.network.okHttpClient
-import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.data.database.models.anime.AnimeTrack
 import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALOAuth
@@ -34,6 +33,7 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
 import tachiyomi.core.common.util.lang.withIOContext
@@ -451,13 +451,13 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
 
     private fun accessTokenRequest(code: String) = POST(
         OAUTH_URL,
-        body = buildJsonObject {
-            put("grant_type", "authorization_code")
-            put("client_id", CLIENT_ID)
-            put("client_secret", CLIENT_SECRET)
-            put("redirect_uri", REDIRECT_URL)
-            put("code", code)
-        }.toString().toRequestBody(jsonMime),
+        body = FormBody.Builder()
+            .add("grant_type", "authorization_code")
+            .add("client_id", CLIENT_ID)
+            .add("client_secret", CLIENT_SECRET)
+            .add("redirect_uri", REDIRECT_URL)
+            .add("code", code)
+            .build(),
     )
 
     suspend fun getCurrentUser(): Pair<Int, String> {
@@ -563,7 +563,7 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
 
     companion object {
         private const val CLIENT_ID = "33523"
-        private const val CLIENT_SECRET = BuildConfig.ANILIST_CLIENT_SECRET
+        private const val CLIENT_SECRET = "spCWPTMapryGIQwRZ3djJGSKtzCMXB8udNRyDwxX"
         private const val API_URL = "https://graphql.anilist.co/"
         private const val BASE_URL = "https://anilist.co/api/v2/"
         private const val OAUTH_URL = "${BASE_URL}oauth/token"
