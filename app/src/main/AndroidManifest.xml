@@ -239,6 +239,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
 
                 <data android:scheme="playon"/>
+                <data android:scheme="aniyomi"/>
 
                 <data android:host="myanimelist-auth" />
                 <data android:host="anilist-auth" />

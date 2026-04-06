@@ -28,7 +28,7 @@ data object AniListTab : Tab {
             return TabOptions(
                 index = 2u,
                 title = "AniList",
-                icon = painterResource(R.drawable.ic_tracker_anilist),
+                icon = painterResource(R.drawable.ic_tracker_anilist_nav),
             )
         }
 

@@ -569,7 +569,7 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
         private const val OAUTH_URL = "${BASE_URL}oauth/token"
         private const val BASE_MANGA_URL = "https://anilist.co/manga/"
         private const val BASE_ANIME_URL = "https://anilist.co/anime/"
-        private const val REDIRECT_URL = "playon://anilist-auth"
+        private const val REDIRECT_URL = "aniyomi://anilist-auth"
 
         fun mangaUrl(mediaId: Long): String {
             return BASE_MANGA_URL + mediaId

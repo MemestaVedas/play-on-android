@@ -26,7 +26,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import coil3.compose.AsyncImage
@@ -66,6 +68,7 @@ private fun LoadingState() {
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         CircularProgressIndicator()
     }
@@ -73,11 +76,14 @@ private fun LoadingState() {
 
 @Composable
 private fun GuestState() {
+    val uriHandler = LocalUriHandler.current
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp),
         verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
             text = "Sign in to AniList to load your dashboard.",
@@ -89,6 +95,12 @@ private fun GuestState() {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        OutlinedButton(
+            onClick = { uriHandler.openUri(AnilistApi.authUrl().toString()) },
+            modifier = Modifier.padding(top = 20.dp),
+        ) {
+            Text("Log in to AniList")
+        }
     }
 }
 
@@ -102,6 +114,7 @@ private fun ErrorState(
             .fillMaxSize()
             .padding(24.dp),
         verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
             text = "AniList failed to load",
