@@ -10,10 +10,13 @@ import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALOAuth
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALSearchResult
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALUserListEntryQueryResult
+import eu.kanade.tachiyomi.data.track.anilist.apollo.AiringOnMyListQuery
+import eu.kanade.tachiyomi.data.track.anilist.apollo.UnreadNotificationCountQuery
 import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import eu.kanade.tachiyomi.data.track.anilist.apollo.DeleteMediaListMutation
 import eu.kanade.tachiyomi.data.track.anilist.apollo.UpdateEntryMutation
+import eu.kanade.tachiyomi.data.track.anilist.apollo.ViewerUserInfoQuery
 import eu.kanade.tachiyomi.data.track.anilist.apollo.ViewerSettingsQuery
 import eu.kanade.tachiyomi.data.track.anilist.apollo.type.FuzzyDateInput
 import eu.kanade.tachiyomi.data.track.anilist.apollo.type.MediaListStatus
@@ -28,6 +31,8 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
 import tachiyomi.core.common.util.lang.withIOContext
@@ -443,6 +448,70 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
         }
     }
 
+    suspend fun getHomeDashboard(limit: Int = 6): HomeDashboard {
+        return withIOContext {
+            coroutineScope {
+                val viewerDeferred = async {
+                    val response = apolloClient.query(ViewerUserInfoQuery()).execute()
+                    throwIfApolloFailed(response.errors)
+                    val viewer = response.data?.Viewer ?: throw Exception("Unable to fetch AniList viewer")
+                    val userInfo = viewer.userInfo
+                    HomeViewer(
+                        id = viewer.id,
+                        name = userInfo.name,
+                        avatarUrl = userInfo.avatar?.large,
+                        bannerImageUrl = userInfo.bannerImage,
+                        aboutHtml = userInfo.about,
+                        profileColor = userInfo.options?.profileColor,
+                        titleLanguage = userInfo.options?.titleLanguage?.rawValue,
+                        scoreFormat = userInfo.mediaListOptions?.commonMediaListOptions?.scoreFormat?.rawValue,
+                    )
+                }
+
+                val unreadNotificationsDeferred = async {
+                    val response = apolloClient.query(UnreadNotificationCountQuery()).execute()
+                    throwIfApolloFailed(response.errors)
+                    response.data?.Viewer?.unreadNotificationCount ?: 0
+                }
+
+                val airingDeferred = async {
+                    val response = apolloClient.query(
+                        AiringOnMyListQuery(
+                            page = Optional.present(1),
+                            perPage = Optional.present(limit),
+                        ),
+                    ).execute()
+                    throwIfApolloFailed(response.errors)
+                    response.data?.Page?.media.orEmpty()
+                        .filterNotNull()
+                        .map { media ->
+                            val details = media.basicMediaDetails
+                            val entry = media.mediaListEntry?.basicMediaListEntry
+                            HomeAiringMedia(
+                                id = media.id,
+                                title = details.title?.userPreferred ?: "Untitled",
+                                coverImageUrl = media.coverImage?.large,
+                                coverColor = null,
+                                meanScore = media.meanScore,
+                                nextEpisode = entry?.progress?.plus(1),
+                                timeUntilAiringSeconds = media.nextAiringEpisode?.timeUntilAiring,
+                                listStatus = entry?.status?.rawValue,
+                                progress = entry?.progress,
+                                totalEpisodes = details.episodes,
+                                mediaType = details.type?.rawValue,
+                            )
+                        }
+                }
+
+                HomeDashboard(
+                    viewer = viewerDeferred.await(),
+                    unreadNotifications = unreadNotificationsDeferred.await(),
+                    airingMedia = airingDeferred.await(),
+                )
+            }
+        }
+    }
+
     private fun createDateInput(dateValue: Long): FuzzyDateInput? {
         if (dateValue == 0L) return null
         val dateTime = ZonedDateTime.ofInstant(Instant.ofEpochMilli(dateValue), ZoneId.systemDefault())
@@ -490,4 +559,35 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
             .appendQueryParameter("response_type", "token")
             .build()
     }
+
+    data class HomeDashboard(
+        val viewer: HomeViewer,
+        val unreadNotifications: Int,
+        val airingMedia: List<HomeAiringMedia>,
+    )
+
+    data class HomeViewer(
+        val id: Int,
+        val name: String,
+        val avatarUrl: String?,
+        val bannerImageUrl: String?,
+        val aboutHtml: String?,
+        val profileColor: String?,
+        val titleLanguage: String?,
+        val scoreFormat: String?,
+    )
+
+    data class HomeAiringMedia(
+        val id: Int,
+        val title: String,
+        val coverImageUrl: String?,
+        val coverColor: String?,
+        val meanScore: Int?,
+        val nextEpisode: Int?,
+        val timeUntilAiringSeconds: Int?,
+        val listStatus: String?,
+        val progress: Int?,
+        val totalEpisodes: Int?,
+        val mediaType: String?,
+    )
 }
