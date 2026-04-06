@@ -540,11 +540,12 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
     }
 
     companion object {
-        private const val CLIENT_ID = "5338"
+        private const val CLIENT_ID = "33523"
         private const val API_URL = "https://graphql.anilist.co/"
         private const val BASE_URL = "https://anilist.co/api/v2/"
         private const val BASE_MANGA_URL = "https://anilist.co/manga/"
         private const val BASE_ANIME_URL = "https://anilist.co/anime/"
+        private const val REDIRECT_URL = "playon://anilist-auth"
 
         fun mangaUrl(mediaId: Long): String {
             return BASE_MANGA_URL + mediaId
@@ -557,6 +558,7 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
         fun authUrl(): Uri = "${BASE_URL}oauth/authorize".toUri().buildUpon()
             .appendQueryParameter("client_id", CLIENT_ID)
             .appendQueryParameter("response_type", "token")
+            .appendQueryParameter("redirect_uri", REDIRECT_URL)
             .build()
     }
 
