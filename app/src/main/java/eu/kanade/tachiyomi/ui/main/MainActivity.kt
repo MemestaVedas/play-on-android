@@ -540,7 +540,7 @@ class MainActivity : BaseActivity() {
                     navigator.push(RestoreBackupScreen(intent.data.toString()))
                 }
                 // Deep link to add anime extension repo
-                else if (intent.scheme == "aniyomi" && intent.data?.host == "add-repo") {
+                else if (intent.scheme == "playon" && intent.data?.host == "add-repo") {
                     intent.data?.getQueryParameter("url")?.let { repoUrl ->
                         navigator.popUntilRoot()
                         navigator.push(AnimeExtensionReposScreen(repoUrl))
@@ -577,8 +577,8 @@ class MainActivity : BaseActivity() {
     }
 
     companion object {
-        const val INTENT_SEARCH = "eu.kanade.tachiyomi.SEARCH"
-        const val INTENT_ANIMESEARCH = "eu.kanade.tachiyomi.ANIMESEARCH"
+        const val INTENT_SEARCH = "moe.memesta.playon.SEARCH"
+        const val INTENT_ANIMESEARCH = "moe.memesta.playon.ANIMESEARCH"
         const val INTENT_SEARCH_QUERY = "query"
         const val INTENT_SEARCH_FILTER = "filter"
         const val INTENT_SEARCH_TYPE = "type"

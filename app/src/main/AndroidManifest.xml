@@ -68,7 +68,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <data android:scheme="tachiyomi" />
+                <data android:scheme="playon" />
                 <data android:host="add-repo" />
             </intent-filter>
 
@@ -79,7 +79,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <data android:scheme="aniyomi" />
+                <data android:scheme="playon" />
                 <data android:host="add-repo" />
             </intent-filter>
 
@@ -135,7 +135,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <intent-filter>
-                <action android:name="eu.kanade.tachiyomi.ANIMESEARCH" />
+                <action android:name="moe.memesta.playon.ANIMESEARCH" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <intent-filter>
@@ -162,11 +162,11 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <intent-filter>
-                <action android:name="eu.kanade.tachiyomi.SEARCH" />
+                <action android:name="moe.memesta.playon.SEARCH" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <intent-filter>
-                <action android:name="eu.kanade.tachiyomi.ANIMESEARCH" />
+                <action android:name="moe.memesta.playon.ANIMESEARCH" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <intent-filter>
@@ -238,7 +238,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <data android:scheme="aniyomi"/>
+                <data android:scheme="playon"/>
 
                 <data android:host="myanimelist-auth" />
                 <data android:host="anilist-auth" />

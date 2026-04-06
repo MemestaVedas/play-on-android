@@ -467,8 +467,8 @@ class PlayerActivity : BaseActivity() {
         }
 
         // Copy over the bridge file
-        val luaFile = scriptsDir()?.createFile("aniyomi.lua")
-        val luaBridge = assets.open("aniyomi.lua")
+        val luaFile = scriptsDir()?.createFile("playon.lua")
+        val luaBridge = assets.open("playon.lua")
         luaFile?.openOutputStream()?.bufferedWriter()?.use { scriptLua ->
             luaBridge.bufferedReader().use { scriptLua.write(it.readText()) }
         }
@@ -724,7 +724,7 @@ class PlayerActivity : BaseActivity() {
                 viewModel.updateSubtitle(viewModel.selectedSubtitles.value.first, it)
             }
             "hwdec", "hwdec-current" -> viewModel.getDecoder()
-            "user-data/aniyomi" -> viewModel.handleLuaInvocation(property, value)
+            "user-data/playon" -> viewModel.handleLuaInvocation(property, value)
         }
     }
 

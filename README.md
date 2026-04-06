@@ -1,12 +1,12 @@
 <div align="center">
 
 <a href="https://aniyomi.org">
-    <img src="./.github/assets/logo.png" alt="Aniyomi logo" title="Aniyomi logo" width="80"/>
+    <img src="./.github/assets/logo.png" alt="PLAY-ON! logo" title="PLAY-ON! logo" width="80"/>
 </a>
 
-# Aniyomi [App](#)
+# PLAY-ON! [App](#)
 
-### Full-featured player and reader, based on ~~Tachiyomi~~ Mihon.
+### Full-featured player and reader, based on ~~Tachiyomi~~ PLAY-ON!.
 Discover and watch anime, cartoons, series, and more – easier than ever on your Android device.
 
 [![Discord server](https://img.shields.io/discord/841701076242530374.svg?label=&labelColor=6A7EC2&color=7389D8&logo=discord&logoColor=FFFFFF)](https://discord.gg/F32UjdJZrR)
@@ -57,7 +57,7 @@ Before reporting a new issue, take a look at the [FAQ](https://aniyomi.org/docs/
 Thank you to all the people who have contributed!
 
 <a href="https://github.com/aniyomiorg/aniyomi/graphs/contributors">
-    <img src="https://contrib.rocks/image?repo=aniyomiorg/aniyomi" alt="Aniyomi app contributors" title="Aniyomi app contributors" width="800"/>
+    <img src="https://contrib.rocks/image?repo=aniyomiorg/aniyomi" alt="PLAY-ON! app contributors" title="PLAY-ON! app contributors" width="800"/>
 </a>
 
 ### Disclaimer
@@ -69,7 +69,7 @@ The developer(s) of this application does not have any affiliation with the cont
 <pre>
 Copyright © 2015 Javier Tomás
 Copyright © 2024 Mihon Open Source Project
-Copyright © 2024 Aniyomi Open Source Project
+Copyright © 2024 PLAY-ON! Open Source Project
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
