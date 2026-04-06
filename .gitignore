@@ -8,7 +8,7 @@ build
 .idea/*
 !.idea/icon.png
 /captures
-
+AniHyou-android/
 # Configuration files
 local.properties
 
