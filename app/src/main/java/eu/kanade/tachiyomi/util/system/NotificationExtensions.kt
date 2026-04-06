@@ -12,7 +12,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.NotificationManagerCompat.NotificationWithIdAndTag
 import androidx.core.content.PermissionChecker
 import androidx.core.content.getSystemService
-import eu.kanade.tachiyomi.R
+import tachiyomi.presentation.core.R as PresentationCoreR
 
 val Context.notificationManager: NotificationManager
     get() = getSystemService()!!
@@ -68,7 +68,7 @@ fun Context.notificationBuilder(
     block: (NotificationCompat.Builder.() -> Unit)? = null,
 ): NotificationCompat.Builder {
     val builder = NotificationCompat.Builder(this, channelId)
-        .setColor(getColor(R.color.accent_blue))
+        .setColor(getColor(PresentationCoreR.color.accent_blue))
     if (block != null) {
         builder.block()
     }

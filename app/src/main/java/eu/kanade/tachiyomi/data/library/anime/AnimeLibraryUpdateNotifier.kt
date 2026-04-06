@@ -29,6 +29,7 @@ import eu.kanade.tachiyomi.util.system.cancelNotification
 import eu.kanade.tachiyomi.util.system.getBitmapOrNull
 import eu.kanade.tachiyomi.util.system.notificationBuilder
 import eu.kanade.tachiyomi.util.system.notify
+import tachiyomi.core.common.i18n.pluralStringResource
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchUI
 import tachiyomi.domain.entries.anime.model.Anime
@@ -199,8 +200,8 @@ class AnimeLibraryUpdateNotifier(
                 setContentText(updates.first().first.title.chop(NOTIF_TITLE_MAX_LEN))
             } else {
                 setContentText(
-                    context.resources.getQuantityString(
-                        R.plurals.notification_new_episodes_summary,
+                    context.pluralStringResource(
+                        AYMR.plurals.notification_new_episodes_summary,
                         updates.size,
                         updates.size,
                     ),
@@ -335,8 +336,8 @@ class AnimeLibraryUpdateNotifier(
             // No sensible episode numbers to show (i.e. no episodes have parsed episode number)
             0 -> {
                 // "1 new episode" or "5 new episodes"
-                context.resources.getQuantityString(
-                    R.plurals.notification_episodes_generic,
+                context.pluralStringResource(
+                    AYMR.plurals.notification_episodes_generic,
                     episodes.size,
                     episodes.size,
                 )
@@ -368,8 +369,8 @@ class AnimeLibraryUpdateNotifier(
                     val joinedEpisodeNumbers = displayableEpisodeNumbers.take(NOTIF_MAX_EPISODES).joinToString(
                         ", ",
                     )
-                    context.resources.getQuantityString(
-                        R.plurals.notification_episodes_multiple_and_more,
+                    context.pluralStringResource(
+                        AYMR.plurals.notification_episodes_multiple_and_more,
                         remaining,
                         joinedEpisodeNumbers,
                         remaining,

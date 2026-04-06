@@ -12,6 +12,7 @@ import eu.kanade.tachiyomi.util.storage.getUriCompat
 import eu.kanade.tachiyomi.util.system.cancelNotification
 import eu.kanade.tachiyomi.util.system.notificationBuilder
 import eu.kanade.tachiyomi.util.system.notify
+import tachiyomi.core.common.i18n.pluralStringResource
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.storage.displayablePath
 import tachiyomi.i18n.MR
@@ -160,8 +161,8 @@ class BackupNotifier(private val context: Context) {
         with(completeNotificationBuilder) {
             setContentTitle(contentTitle)
             setContentText(
-                context.resources.getQuantityString(
-                    R.plurals.restore_completed_message,
+                context.pluralStringResource(
+                    MR.plurals.restore_completed_message,
                     errorCount,
                     timeString,
                     errorCount,

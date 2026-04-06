@@ -34,7 +34,6 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.core.util.ifMangaSourcesLoaded
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.util.Screen
-import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.preference.SharedPreferencesDataStore
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.sourcePreferences
@@ -123,7 +122,7 @@ class MangaSourcePreferencesFragment : PreferenceFragmentCompat() {
     override fun getContext(): Context? {
         val superCtx = super.getContext() ?: return null
         val tv = TypedValue()
-        superCtx.theme.resolveAttribute(R.attr.preferenceTheme, tv, true)
+        superCtx.theme.resolveAttribute(androidx.preference.R.attr.preferenceTheme, tv, true)
         return ContextThemeWrapper(superCtx, tv.resourceId)
     }
 

@@ -8,6 +8,7 @@ import eu.kanade.tachiyomi.data.notification.NotificationReceiver
 import eu.kanade.tachiyomi.data.notification.Notifications
 import eu.kanade.tachiyomi.util.system.cancelNotification
 import eu.kanade.tachiyomi.util.system.notify
+import tachiyomi.core.common.i18n.pluralStringResource
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
@@ -22,8 +23,8 @@ class ExtensionUpdateNotifier(
             Notifications.CHANNEL_EXTENSIONS_UPDATE,
         ) {
             setContentTitle(
-                context.resources.getQuantityString(
-                    R.plurals.update_check_notification_ext_updates,
+                context.pluralStringResource(
+                    tachiyomi.i18n.MR.plurals.update_check_notification_ext_updates,
                     names.size,
                     names.size,
                 ),

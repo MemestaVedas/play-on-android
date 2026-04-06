@@ -24,9 +24,11 @@ import kotlinx.coroutines.flow.combineTransform
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.domain.download.service.DownloadPreferences
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import tachiyomi.i18n.MR
 
 /**
  * This worker is used to manage the downloader. The system can decide to stop the worker, in
@@ -39,7 +41,7 @@ class MangaDownloadJob(context: Context, workerParams: WorkerParameters) : Corou
 
     override suspend fun getForegroundInfo(): ForegroundInfo {
         val notification = applicationContext.notificationBuilder(Notifications.CHANNEL_DOWNLOADER_PROGRESS) {
-            setContentTitle(applicationContext.getString(R.string.download_notifier_downloader_title))
+            setContentTitle(applicationContext.stringResource(MR.strings.download_notifier_downloader_title))
             setSmallIcon(android.R.drawable.stat_sys_download)
         }.build()
         return ForegroundInfo(
@@ -89,12 +91,12 @@ class MangaDownloadJob(context: Context, workerParams: WorkerParameters) : Corou
             val noWifi = requireWifi && !state.isWifi
             if (noWifi) {
                 downloadManager.downloaderStop(
-                    applicationContext.getString(R.string.download_notifier_text_only_wifi),
+                    applicationContext.stringResource(MR.strings.download_notifier_text_only_wifi),
                 )
             }
             !noWifi
         } else {
-            downloadManager.downloaderStop(applicationContext.getString(R.string.download_notifier_no_network))
+            downloadManager.downloaderStop(applicationContext.stringResource(MR.strings.download_notifier_no_network))
             false
         }
     }

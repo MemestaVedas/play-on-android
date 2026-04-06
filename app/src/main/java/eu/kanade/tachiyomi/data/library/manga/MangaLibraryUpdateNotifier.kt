@@ -29,6 +29,7 @@ import eu.kanade.tachiyomi.util.system.cancelNotification
 import eu.kanade.tachiyomi.util.system.getBitmapOrNull
 import eu.kanade.tachiyomi.util.system.notificationBuilder
 import eu.kanade.tachiyomi.util.system.notify
+import tachiyomi.core.common.i18n.pluralStringResource
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchUI
 import tachiyomi.domain.entries.manga.model.Manga
@@ -181,8 +182,8 @@ class MangaLibraryUpdateNotifier(
                 setContentText(updates.first().first.title.chop(NOTIF_TITLE_MAX_LEN))
             } else {
                 setContentText(
-                    context.resources.getQuantityString(
-                        R.plurals.notification_new_chapters_summary,
+                    context.pluralStringResource(
+                        MR.plurals.notification_new_chapters_summary,
                         updates.size,
                         updates.size,
                     ),
@@ -321,8 +322,8 @@ class MangaLibraryUpdateNotifier(
             // No sensible chapter numbers to show (i.e. no chapters have parsed chapter number)
             0 -> {
                 // "1 new chapter" or "5 new chapters"
-                context.resources.getQuantityString(
-                    R.plurals.notification_chapters_generic,
+                context.pluralStringResource(
+                    MR.plurals.notification_chapters_generic,
                     chapters.size,
                     chapters.size,
                 )
@@ -354,8 +355,8 @@ class MangaLibraryUpdateNotifier(
                     val joinedChapterNumbers = displayableChapterNumbers.take(NOTIF_MAX_CHAPTERS).joinToString(
                         ", ",
                     )
-                    context.resources.getQuantityString(
-                        R.plurals.notification_chapters_multiple_and_more,
+                    context.pluralStringResource(
+                        MR.plurals.notification_chapters_multiple_and_more,
                         remaining,
                         joinedChapterNumbers,
                         remaining,

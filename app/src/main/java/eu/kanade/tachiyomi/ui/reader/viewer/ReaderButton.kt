@@ -4,7 +4,6 @@ import android.content.Context
 import android.util.AttributeSet
 import android.view.MotionEvent
 import com.google.android.material.button.MaterialButton
-import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.ui.reader.viewer.pager.PagerViewer
 
 /**
@@ -14,7 +13,7 @@ import eu.kanade.tachiyomi.ui.reader.viewer.pager.PagerViewer
 class ReaderButton @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
-    defStyleAttr: Int = R.attr.materialButtonStyle,
+    defStyleAttr: Int = com.google.android.material.R.attr.materialButtonStyle,
 ) : MaterialButton(context, attrs, defStyleAttr) {
 
     var viewer: PagerViewer? = null
