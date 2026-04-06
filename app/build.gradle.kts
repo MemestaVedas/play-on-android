@@ -23,6 +23,11 @@ android {
         versionCode = 131
         versionName = "0.18.1.2"
 
+        val anilistClientSecret =
+            providers.environmentVariable("ANILIST_CLIENT_SECRET").orNull
+                ?: "spCWPTMapryGIQwRZ3djJGSKtzCMXB8udNRyDwxX"
+        buildConfigField("String", "ANILIST_CLIENT_SECRET", "\"$anilistClientSecret\"")
+
         buildConfigField("String", "COMMIT_COUNT", "\"${getCommitCount()}\"")
         buildConfigField("String", "COMMIT_SHA", "\"${getGitSha()}\"")
         buildConfigField("String", "BUILD_TIME", "\"${getBuildTime(useLastCommitTime = false)}\"")

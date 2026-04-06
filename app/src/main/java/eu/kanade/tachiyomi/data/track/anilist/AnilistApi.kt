@@ -5,6 +5,7 @@ import androidx.core.net.toUri
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
 import com.apollographql.apollo.network.okHttpClient
+import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.data.database.models.anime.AnimeTrack
 import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALOAuth
@@ -438,6 +439,27 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
         return ALOAuth(token, "Bearer", System.currentTimeMillis() + 31536000000, 31536000000)
     }
 
+    suspend fun accessToken(code: String): ALOAuth {
+        return withIOContext {
+            with(json) {
+                client.newCall(accessTokenRequest(code))
+                    .awaitSuccess()
+                    .parseAs()
+            }
+        }
+    }
+
+    private fun accessTokenRequest(code: String) = POST(
+        OAUTH_URL,
+        body = buildJsonObject {
+            put("grant_type", "authorization_code")
+            put("client_id", CLIENT_ID)
+            put("client_secret", CLIENT_SECRET)
+            put("redirect_uri", REDIRECT_URL)
+            put("code", code)
+        }.toString().toRequestBody(jsonMime),
+    )
+
     suspend fun getCurrentUser(): Pair<Int, String> {
         return withIOContext {
             val response = apolloClient.query(ViewerSettingsQuery()).execute()
@@ -541,8 +563,10 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
 
     companion object {
         private const val CLIENT_ID = "33523"
+        private const val CLIENT_SECRET = BuildConfig.ANILIST_CLIENT_SECRET
         private const val API_URL = "https://graphql.anilist.co/"
         private const val BASE_URL = "https://anilist.co/api/v2/"
+        private const val OAUTH_URL = "${BASE_URL}oauth/token"
         private const val BASE_MANGA_URL = "https://anilist.co/manga/"
         private const val BASE_ANIME_URL = "https://anilist.co/anime/"
         private const val REDIRECT_URL = "playon://anilist-auth"
@@ -557,7 +581,7 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
 
         fun authUrl(): Uri = "${BASE_URL}oauth/authorize".toUri().buildUpon()
             .appendQueryParameter("client_id", CLIENT_ID)
-            .appendQueryParameter("response_type", "token")
+            .appendQueryParameter("response_type", "code")
             .appendQueryParameter("redirect_uri", REDIRECT_URL)
             .build()
     }
