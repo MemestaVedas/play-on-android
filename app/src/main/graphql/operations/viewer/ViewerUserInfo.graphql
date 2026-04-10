@@ -1,0 +1,19 @@
+query ViewerUserInfo {
+    Viewer {
+        id
+        name
+        avatar {
+            large
+        }
+        bannerImage
+        about(asHtml: true)
+        options {
+            profileColor
+            titleLanguage
+        }
+        mediaListOptions {
+            scoreFormat
+        }
+        siteUrl
+    }
+}
