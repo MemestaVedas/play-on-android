@@ -10,6 +10,7 @@ import androidx.compose.ui.res.vectorResource
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.presentation.util.Tab
 import eu.kanade.tachiyomi.R
+import eu.kanade.tachiyomi.ui.anilist.AniListTab
 import eu.kanade.tachiyomi.ui.browse.BrowseTab
 import eu.kanade.tachiyomi.ui.history.HistoriesTab
 import eu.kanade.tachiyomi.ui.library.anime.AnimeLibraryTab
@@ -42,7 +43,7 @@ enum class NavStyle(
             return mutableListOf(
                 AnimeLibraryTab,
                 MangaLibraryTab,
-                UpdatesTab,
+                AniListTab,
                 HistoriesTab,
                 BrowseTab,
                 MoreTab,
