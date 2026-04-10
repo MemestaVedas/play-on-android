@@ -1,5 +1,6 @@
 [versions]
 aboutlib_version = "11.6.3"
+apollo = "4.4.1"
 leakcanary = "2.14"
 moko = "0.24.5"
 okhttp_version = "5.0.0-alpha.14"
@@ -54,6 +55,13 @@ natural-comparator = "com.github.gpanther:java-nat-sort:natural-comparator-1.1"
 
 richtext-commonmark = { module = "com.halilibo.compose-richtext:richtext-commonmark", version.ref = "richtext" }
 richtext-m3 = { module = "com.halilibo.compose-richtext:richtext-ui-material3", version.ref = "richtext" }
+apollo-runtime = { module = "com.apollographql.apollo:apollo-runtime", version.ref = "apollo" }
+apollo-api = { module = "com.apollographql.apollo:apollo-api", version.ref = "apollo" }
+apollo-normalized-cache = { module = "com.apollographql.apollo:apollo-normalized-cache", version.ref = "apollo" }
+apollo-normalized-cache-sqlite = { module = "com.apollographql.apollo:apollo-normalized-cache-sqlite", version.ref = "apollo" }
+placeholder-material3 = "io.github.fornewid:placeholder-material3:2.0.0"
+markdown-renderer = "com.mikepenz:multiplatform-markdown-renderer-android:0.39.2"
+markdown-renderer-m3 = "com.mikepenz:multiplatform-markdown-renderer-m3:0.39.2"
 
 material = "com.google.android.material:material:1.12.0"
 flexible-adapter-core = "com.github.arkon.FlexibleAdapter:flexible-adapter:c8013533"
@@ -101,6 +109,7 @@ ktlint-core = { module = "com.pinterest.ktlint:ktlint-cli", version.ref = "ktlin
 aboutLibraries = { id = "com.mikepenz.aboutlibraries.plugin", version.ref = "aboutlib_version" }
 sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
 moko = { id = "dev.icerock.mobile.multiplatform-resources", version.ref = "moko" }
+apollo = { id = "com.apollographql.apollo", version.ref = "apollo" }
 
 [bundles]
 okhttp = ["okhttp-core", "okhttp-logging", "okhttp-brotli", "okhttp-dnsoverhttps"]

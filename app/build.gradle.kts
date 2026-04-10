@@ -8,6 +8,7 @@ plugins {
     id("mihon.android.application.compose")
     id("com.github.zellius.shortcut-helper")
     kotlin("plugin.serialization")
+    alias(libs.plugins.apollo)
     alias(libs.plugins.aboutLibraries)
 }
 
@@ -242,6 +243,10 @@ dependencies {
     implementation(libs.bundles.okhttp)
     implementation(libs.okio)
     implementation(libs.conscrypt.android) // TLS 1.3 support for Android < 10
+    implementation(libs.apollo.runtime)
+    implementation(libs.apollo.api)
+    implementation(libs.apollo.normalized.cache)
+    implementation(libs.apollo.normalized.cache.sqlite)
 
     // Data serialization (JSON, protobuf, xml)
     implementation(kotlinx.bundles.serialization)
@@ -269,6 +274,7 @@ dependencies {
 
     // UI libraries
     implementation(libs.material)
+    implementation(libs.placeholder.material3)
     implementation(libs.flexible.adapter.core)
     implementation(libs.photoview)
     implementation(libs.directionalviewpager) {
