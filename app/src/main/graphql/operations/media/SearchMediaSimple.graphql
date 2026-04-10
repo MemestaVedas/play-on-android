@@ -1,0 +1,29 @@
+query SearchMediaSimple(
+    $search: String,
+    $page: Int,
+    $perPage: Int,
+    $type: MediaType
+) {
+    Page(page: $page, perPage: $perPage) {
+        pageInfo {
+            currentPage
+            hasNextPage
+        }
+        media(search: $search, type: $type, sort: [POPULARITY_DESC]) {
+            id
+            title {
+                userPreferred
+            }
+            coverImage {
+                large
+            }
+            type
+            format
+            status
+            episodes
+            chapters
+            meanScore
+            siteUrl
+        }
+    }
+}
