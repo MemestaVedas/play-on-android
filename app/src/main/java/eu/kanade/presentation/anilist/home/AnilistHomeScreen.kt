@@ -22,8 +22,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import coil3.compose.AsyncImage
+import eu.kanade.presentation.anilist.explore.AnilistExploreScreen
 import eu.kanade.domain.anilist.model.AnilistUserInfo
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.data.track.anilist.AnilistApi
@@ -108,6 +111,7 @@ private fun ReadyState(
     onRefresh: () -> Unit,
 ) {
     val uriHandler = LocalUriHandler.current
+    val navigator = LocalNavigator.currentOrThrow
 
     Column(
         modifier = Modifier
@@ -152,6 +156,10 @@ private fun ReadyState(
 
         OutlinedButton(onClick = onRefresh) {
             Text("Refresh")
+        }
+
+        OutlinedButton(onClick = { navigator.push(AnilistExploreScreen) }) {
+            Text("Explore AniList")
         }
 
         viewer.siteUrl?.let { url ->
