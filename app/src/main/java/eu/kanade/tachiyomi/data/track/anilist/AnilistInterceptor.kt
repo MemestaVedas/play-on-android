@@ -17,7 +17,10 @@ class AnilistInterceptor(val anilist: Anilist, private var token: String?) : Int
      */
     private var oauth: ALOAuth? = null
         set(value) {
-            field = value?.copy(expires = value.expires * 1000 - 60 * 1000)
+            field = value?.let {
+                val expiresMs = if (it.expires > 10_000_000_000L) it.expires else it.expires * 1000
+                it.copy(expires = expiresMs - 60 * 1000)
+            }
         }
 
     override fun intercept(chain: Interceptor.Chain): Response {
@@ -29,15 +32,13 @@ class AnilistInterceptor(val anilist: Anilist, private var token: String?) : Int
         if (oauth == null) {
             oauth = anilist.loadOAuth()
         }
+        if (oauth == null) {
+            throw IOException("No authentication token")
+        }
         // Refresh access token if null or expired.
         if (oauth!!.isExpired()) {
             anilist.logout()
             throw IOException("Token expired")
-        }
-
-        // Throw on null auth.
-        if (oauth == null) {
-            throw IOException("No authentication token")
         }
 
         // Add the authorization header to the original request.

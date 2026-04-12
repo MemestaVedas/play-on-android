@@ -29,6 +29,8 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 import kotlinx.coroutines.async
@@ -442,9 +444,22 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
     suspend fun accessToken(code: String): ALOAuth {
         return withIOContext {
             with(json) {
-                client.newCall(accessTokenRequest(code))
+                val response = client.newCall(accessTokenRequest(code))
                     .awaitSuccess()
-                    .parseAs()
+                    .parseAs<JsonObject>()
+
+                val accessToken = response["access_token"]?.jsonPrimitive?.content
+                    ?: throw Exception("AniList token response missing access_token")
+                val tokenType = response["token_type"]?.jsonPrimitive?.content ?: "Bearer"
+                val expiresIn = response["expires_in"]?.jsonPrimitive?.longOrNull ?: 31536000L
+                val expires = (System.currentTimeMillis() / 1000) + expiresIn
+
+                ALOAuth(
+                    accessToken = accessToken,
+                    tokenType = tokenType,
+                    expires = expires,
+                    expiresIn = expiresIn,
+                )
             }
         }
     }
