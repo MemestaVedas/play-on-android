@@ -1,11 +1,12 @@
-package eu.kanade.presentation.anilist.home
+﻿package eu.kanade.presentation.anilist.home
 
+import androidx.compose.runtime.Immutable
 import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
-import eu.kanade.domain.anilist.base.DataResult
-import eu.kanade.domain.anilist.interactor.GetAnilistViewerProfile
-import eu.kanade.domain.anilist.model.AnilistUserInfo
 import eu.kanade.tachiyomi.data.track.TrackerManager
+import eu.kanade.tachiyomi.data.track.anilist.AnilistApi
+import eu.kanade.tachiyomi.data.track.anilist.AnilistInterceptor
+import kotlinx.coroutines.flow.update
 import tachiyomi.core.common.util.lang.launchIO
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -15,7 +16,12 @@ class AnilistHomeScreenModel(
 ) : StateScreenModel<AnilistHomeScreenModel.State>(State.Loading) {
 
     private val tracker = trackerManager.aniList
-    private val getViewerProfile = GetAnilistViewerProfile()
+    private val api by lazy {
+        AnilistApi(
+            tracker.client,
+            AnilistInterceptor(tracker, tracker.getPassword()),
+        )
+    }
 
     init {
         refresh()
@@ -23,16 +29,19 @@ class AnilistHomeScreenModel(
 
     fun refresh() {
         screenModelScope.launchIO {
-            mutableState.value = State.Loading
             if (!tracker.isLoggedIn) {
-                mutableState.value = State.Guest
+                mutableState.update { State.Guest }
                 return@launchIO
             }
 
-            mutableState.value = when (val result = getViewerProfile()) {
-                is DataResult.Success -> State.Ready(result.data)
-                is DataResult.Error -> State.Error(result.message)
-                DataResult.Loading -> State.Loading
+            mutableState.update { State.Loading }
+
+            runCatching {
+                api.getHomeDashboard()
+            }.onSuccess { dashboard ->
+                mutableState.update { State.Ready(dashboard) }
+            }.onFailure { throwable ->
+                mutableState.update { State.Error(throwable.message ?: "Unable to load AniList") }
             }
         }
     }
@@ -40,7 +49,14 @@ class AnilistHomeScreenModel(
     sealed interface State {
         data object Loading : State
         data object Guest : State
-        data class Ready(val viewer: AnilistUserInfo) : State
-        data class Error(val message: String) : State
+
+        @Immutable
+        data class Ready(
+            val dashboard: AnilistApi.HomeDashboard,
+        ) : State
+
+        data class Error(
+            val message: String,
+        ) : State
     }
 }

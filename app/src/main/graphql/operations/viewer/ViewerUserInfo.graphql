@@ -1,19 +1,27 @@
-query ViewerUserInfo {
+﻿query ViewerUserInfo {
     Viewer {
-        id
-        name
-        avatar {
-            large
-        }
-        bannerImage
-        about(asHtml: true)
-        options {
-            profileColor
-            titleLanguage
-        }
-        mediaListOptions {
-            scoreFormat
-        }
-        siteUrl
+        ...UserInfo
     }
+}
+
+fragment UserInfo on User {
+    id
+    name
+    avatar {
+        large
+    }
+    bannerImage
+    about(asHtml: true)
+    options {
+        profileColor
+        titleLanguage
+    }
+    mediaListOptions {
+        ...CommonMediaListOptions
+    }
+    isFollowing
+    isFollower
+    siteUrl
+    donatorBadge
+    donatorTier
 }

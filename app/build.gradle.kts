@@ -23,6 +23,11 @@ android {
         versionCode = 131
         versionName = "0.18.1.2"
 
+        val anilistClientSecret =
+            providers.environmentVariable("ANILIST_CLIENT_SECRET").orNull
+                ?: "spCWPTMapryGIQwRZ3djJGSKtzCMXB8udNRyDwxX"
+        buildConfigField("String", "ANILIST_CLIENT_SECRET", "\"$anilistClientSecret\"")
+
         buildConfigField("String", "COMMIT_COUNT", "\"${getCommitCount()}\"")
         buildConfigField("String", "COMMIT_SHA", "\"${getGitSha()}\"")
         buildConfigField("String", "BUILD_TIME", "\"${getBuildTime(useLastCommitTime = false)}\"")
@@ -94,7 +99,7 @@ android {
     splits {
         abi {
             isEnable = true
-            isUniversalApk = true
+            isUniversalApk = false
             reset()
             include("arm64-v8a")
         }
@@ -240,6 +245,9 @@ dependencies {
     implementation(libs.rxjava)
 
     // Networking
+    implementation(libs.apollo.runtime)
+    implementation(libs.apollo.normalized.cache)
+    implementation(libs.apollo.api)
     implementation(libs.bundles.okhttp)
     implementation(libs.okio)
     implementation(libs.conscrypt.android) // TLS 1.3 support for Android < 10
@@ -336,6 +344,16 @@ androidComponents {
         // Only excluding in standard flavor because this breaks
         // Layout Inspector's Compose tree
         it.packaging.resources.excludes.add("META-INF/*.version")
+    }
+}
+
+apollo {
+    generateSourcesDuringGradleSync.set(false)
+    service("anilist") {
+        packageName.set("eu.kanade.tachiyomi.data.track.anilist.apollo")
+        generateFragmentImplementations.set(true)
+        mapScalarToKotlinInt("FuzzyDateInt")
+        mapScalarToKotlinString("CountryCode")
     }
 }
 

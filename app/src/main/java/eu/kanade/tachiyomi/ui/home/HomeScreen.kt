@@ -38,6 +38,7 @@ import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.util.Screen
 import eu.kanade.presentation.util.isTabletUi
+import eu.kanade.tachiyomi.ui.anilist.AniListTab
 import eu.kanade.tachiyomi.ui.browse.BrowseTab
 import eu.kanade.tachiyomi.ui.download.DownloadsTab
 import eu.kanade.tachiyomi.ui.entries.anime.AnimeScreen
@@ -171,7 +172,7 @@ object HomeScreen : Screen() {
                         tabNavigator.current = when (it) {
                             is Tab.AnimeLib -> AnimeLibraryTab
                             is Tab.Library -> MangaLibraryTab
-                            is Tab.Updates -> UpdatesTab
+                            is Tab.Updates -> AniListTab
                             is Tab.History -> HistoriesTab
                             is Tab.Browse -> {
                                 if (it.toExtensions) {

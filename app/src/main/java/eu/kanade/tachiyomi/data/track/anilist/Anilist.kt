@@ -355,6 +355,18 @@ class Anilist(id: Long) :
         }
     }
 
+    suspend fun loginWithCode(code: String) {
+        try {
+            val oauth = api.accessToken(code)
+            interceptor.setAuth(oauth)
+            val (username, scoreType) = api.getCurrentUser()
+            scorePreference.set(scoreType)
+            saveCredentials(username.toString(), oauth.accessToken)
+        } catch (e: Throwable) {
+            logout()
+        }
+    }
+
     override fun logout() {
         super.logout()
         trackPreferences.trackToken(this).delete()

@@ -17,8 +17,17 @@ class TrackLoginActivity : BaseOAuthLoginActivity() {
     }
 
     private fun handleAnilist(data: Uri) {
-        val regex = "(?:access_token=)(.*?)(?:&)".toRegex()
-        val matchResult = regex.find(data.fragment.toString())
+        val code = data.getQueryParameter("code")
+        if (!code.isNullOrBlank()) {
+            lifecycleScope.launchIO {
+                trackerManager.aniList.loginWithCode(code)
+                returnToSettings()
+            }
+            return
+        }
+
+        val regex = "(?:access_token=)([^&]+)".toRegex()
+        val matchResult = regex.find(data.fragment.orEmpty())
         if (matchResult?.groups?.get(1) != null) {
             lifecycleScope.launchIO {
                 trackerManager.aniList.login(matchResult.groups[1]!!.value)

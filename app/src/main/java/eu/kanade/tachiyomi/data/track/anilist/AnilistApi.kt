@@ -2,15 +2,24 @@ package eu.kanade.tachiyomi.data.track.anilist
 
 import android.net.Uri
 import androidx.core.net.toUri
+import com.apollographql.apollo.ApolloClient
+import com.apollographql.apollo.api.Optional
+import com.apollographql.apollo.network.okHttpClient
 import eu.kanade.tachiyomi.data.database.models.anime.AnimeTrack
 import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack
-import eu.kanade.tachiyomi.data.track.anilist.dto.ALAddEntryResult
-import eu.kanade.tachiyomi.data.track.anilist.dto.ALCurrentUserResult
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALOAuth
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALSearchResult
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALUserListEntryQueryResult
+import eu.kanade.tachiyomi.data.track.anilist.apollo.AiringOnMyListQuery
+import eu.kanade.tachiyomi.data.track.anilist.apollo.UnreadNotificationCountQuery
 import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
+import eu.kanade.tachiyomi.data.track.anilist.apollo.DeleteMediaListMutation
+import eu.kanade.tachiyomi.data.track.anilist.apollo.UpdateEntryMutation
+import eu.kanade.tachiyomi.data.track.anilist.apollo.ViewerUserInfoQuery
+import eu.kanade.tachiyomi.data.track.anilist.apollo.ViewerSettingsQuery
+import eu.kanade.tachiyomi.data.track.anilist.apollo.type.FuzzyDateInput
+import eu.kanade.tachiyomi.data.track.anilist.apollo.type.MediaListStatus
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.awaitSuccess
 import eu.kanade.tachiyomi.network.interceptor.rateLimit
@@ -22,6 +31,9 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
 import tachiyomi.core.common.util.lang.withIOContext
@@ -42,189 +54,100 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
         .rateLimit(permits = 85, period = 1.minutes)
         .build()
 
+    private val apolloClient = ApolloClient.Builder()
+        .serverUrl(API_URL)
+        .okHttpClient(authClient)
+        .build()
+
+    private fun throwIfApolloFailed(errors: List<com.apollographql.apollo.api.Error>?): Unit {
+        if (!errors.isNullOrEmpty()) {
+            throw Exception(errors.first().message)
+        }
+    }
+
     suspend fun addLibManga(track: MangaTrack): MangaTrack {
         return withIOContext {
-            val query = """
-            |mutation AddManga(${'$'}mangaId: Int, ${'$'}progress: Int, ${'$'}status: MediaListStatus, ${'$'}private: Boolean) {
-                |SaveMediaListEntry (mediaId: ${'$'}mangaId, progress: ${'$'}progress, status: ${'$'}status, private: ${'$'}private) {
-                |   id
-                |   status
-                |}
-            |}
-            |
-            """.trimMargin()
-            val payload = buildJsonObject {
-                put("query", query)
-                putJsonObject("variables") {
-                    put("mangaId", track.remote_id)
-                    put("progress", track.last_chapter_read.toInt())
-                    put("status", track.toApiStatus())
-                    put("private", track.private)
-                }
-            }
-            with(json) {
-                authClient.newCall(
-                    POST(
-                        API_URL,
-                        body = payload.toString().toRequestBody(jsonMime),
-                    ),
-                )
-                    .awaitSuccess()
-                    .parseAs<ALAddEntryResult>()
-                    .let {
-                        track
-                    }
-            }
+            val response = apolloClient.mutation(
+                UpdateEntryMutation(
+                    mediaId = Optional.present(track.remote_id.toInt()),
+                    progress = Optional.present(track.last_chapter_read.toInt()),
+                    status = Optional.present(MediaListStatus.safeValueOf(track.toApiStatus())),
+                    `private` = Optional.present(track.private),
+                ),
+            ).execute()
+            throwIfApolloFailed(response.errors)
+            track
         }
     }
 
     suspend fun updateLibManga(track: MangaTrack): MangaTrack {
         return withIOContext {
-            val query = """
-            |mutation UpdateManga(
-                |${'$'}listId: Int, ${'$'}progress: Int, ${'$'}status: MediaListStatus, ${'$'}private: Boolean,
-                |${'$'}score: Int, ${'$'}startedAt: FuzzyDateInput, ${'$'}completedAt: FuzzyDateInput
-            |) {
-                |SaveMediaListEntry(
-                    |id: ${'$'}listId, progress: ${'$'}progress, status: ${'$'}status, private: ${'$'}private,
-                    |scoreRaw: ${'$'}score, startedAt: ${'$'}startedAt, completedAt: ${'$'}completedAt
-                |) {
-                    |id
-                    |status
-                    |progress
-                |}
-            |}
-            |
-            """.trimMargin()
-            val payload = buildJsonObject {
-                put("query", query)
-                putJsonObject("variables") {
-                    put("listId", track.library_id)
-                    put("progress", track.last_chapter_read.toInt())
-                    put("status", track.toApiStatus())
-                    put("score", track.score.toInt())
-                    put("startedAt", createDate(track.started_reading_date))
-                    put("completedAt", createDate(track.finished_reading_date))
-                    put("private", track.private)
-                }
-            }
-            authClient.newCall(POST(API_URL, body = payload.toString().toRequestBody(jsonMime)))
-                .awaitSuccess()
+            val response = apolloClient.mutation(
+                UpdateEntryMutation(
+                    mediaId = Optional.present(track.remote_id.toInt()),
+                    progress = Optional.present(track.last_chapter_read.toInt()),
+                    status = Optional.present(MediaListStatus.safeValueOf(track.toApiStatus())),
+                    score = Optional.present(track.score),
+                    startedAt = Optional.present(createDateInput(track.started_reading_date)),
+                    completedAt = Optional.present(createDateInput(track.finished_reading_date)),
+                    `private` = Optional.present(track.private),
+                ),
+            ).execute()
+            throwIfApolloFailed(response.errors)
             track
         }
     }
 
     suspend fun deleteLibManga(track: DomainMangaTrack) {
         withIOContext {
-            val query = """
-            |mutation DeleteManga(${'$'}listId: Int) {
-                |DeleteMediaListEntry(id: ${'$'}listId) {
-                    |deleted
-                |}
-            |}
-            |
-            """.trimMargin()
-            val payload = buildJsonObject {
-                put("query", query)
-                putJsonObject("variables") {
-                    put("listId", track.libraryId)
-                }
-            }
-            authClient.newCall(POST(API_URL, body = payload.toString().toRequestBody(jsonMime)))
-                .awaitSuccess()
+            val listId = track.libraryId ?: return@withIOContext
+            val response = apolloClient.mutation(
+                DeleteMediaListMutation(mediaListEntryId = Optional.present(listId.toInt())),
+            ).execute()
+            throwIfApolloFailed(response.errors)
         }
     }
 
     suspend fun addLibAnime(track: AnimeTrack): AnimeTrack {
         return withIOContext {
-            val query = """
-            |mutation AddAnime(${'$'}animeId: Int, ${'$'}progress: Int, ${'$'}status: MediaListStatus, ${'$'}private: Boolean) {
-                |SaveMediaListEntry (mediaId: ${'$'}animeId, progress: ${'$'}progress, status: ${'$'}status, private: ${'$'}private) {
-                |   id
-                |   status
-                |}
-            |}
-            |
-            """.trimMargin()
-            val payload = buildJsonObject {
-                put("query", query)
-                putJsonObject("variables") {
-                    put("animeId", track.remote_id)
-                    put("progress", track.last_episode_seen.toInt())
-                    put("status", track.toApiStatus())
-                    put("private", track.private)
-                }
-            }
-            with(json) {
-                authClient.newCall(
-                    POST(
-                        API_URL,
-                        body = payload.toString().toRequestBody(jsonMime),
-                    ),
-                )
-                    .awaitSuccess()
-                    .parseAs<ALAddEntryResult>()
-                    .let {
-                        track
-                    }
-            }
+            val response = apolloClient.mutation(
+                UpdateEntryMutation(
+                    mediaId = Optional.present(track.remote_id.toInt()),
+                    progress = Optional.present(track.last_episode_seen.toInt()),
+                    status = Optional.present(MediaListStatus.safeValueOf(track.toApiStatus())),
+                    `private` = Optional.present(track.private),
+                ),
+            ).execute()
+            throwIfApolloFailed(response.errors)
+            track
         }
     }
 
     suspend fun updateLibAnime(track: AnimeTrack): AnimeTrack {
         return withIOContext {
-            val query = """
-            |mutation UpdateAnime(
-                |${'$'}listId: Int, ${'$'}progress: Int, ${'$'}status: MediaListStatus, ${'$'}private: Boolean,
-                |${'$'}score: Int, ${'$'}startedAt: FuzzyDateInput, ${'$'}completedAt: FuzzyDateInput
-            |) {
-                |SaveMediaListEntry(
-                    |id: ${'$'}listId, progress: ${'$'}progress, status: ${'$'}status, private: ${'$'}private,
-                    |scoreRaw: ${'$'}score, startedAt: ${'$'}startedAt, completedAt: ${'$'}completedAt
-                |) {
-                    |id
-                    |status
-                    |progress
-                |}
-            |}
-            |
-            """.trimMargin()
-            val payload = buildJsonObject {
-                put("query", query)
-                putJsonObject("variables") {
-                    put("listId", track.library_id)
-                    put("progress", track.last_episode_seen.toInt())
-                    put("status", track.toApiStatus())
-                    put("score", track.score.toInt())
-                    put("startedAt", createDate(track.started_watching_date))
-                    put("completedAt", createDate(track.finished_watching_date))
-                    put("private", track.private)
-                }
-            }
-            authClient.newCall(POST(API_URL, body = payload.toString().toRequestBody(jsonMime)))
-                .awaitSuccess()
+            val response = apolloClient.mutation(
+                UpdateEntryMutation(
+                    mediaId = Optional.present(track.remote_id.toInt()),
+                    progress = Optional.present(track.last_episode_seen.toInt()),
+                    status = Optional.present(MediaListStatus.safeValueOf(track.toApiStatus())),
+                    score = Optional.present(track.score),
+                    startedAt = Optional.present(createDateInput(track.started_watching_date)),
+                    completedAt = Optional.present(createDateInput(track.finished_watching_date)),
+                    `private` = Optional.present(track.private),
+                ),
+            ).execute()
+            throwIfApolloFailed(response.errors)
             track
         }
     }
 
     suspend fun deleteLibAnime(track: DomainAnimeTrack) {
         return withIOContext {
-            val query = """
-            |mutation DeleteAnime(${'$'}listId: Int) {
-                |DeleteMediaListEntry(id: ${'$'}listId) {
-                    |deleted
-                |}
-            |}
-            |
-            """.trimMargin()
-            val payload = buildJsonObject {
-                put("query", query)
-                putJsonObject("variables") {
-                    put("listId", track.libraryId)
-                }
-            }
-            authClient.newCall(POST(API_URL, body = payload.toString().toRequestBody(jsonMime)))
-                .awaitSuccess()
+            val listId = track.libraryId ?: return@withIOContext
+            val response = apolloClient.mutation(
+                DeleteMediaListMutation(mediaListEntryId = Optional.present(listId.toInt())),
+            ).execute()
+            throwIfApolloFailed(response.errors)
         }
     }
 
@@ -516,37 +439,109 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
         return ALOAuth(token, "Bearer", System.currentTimeMillis() + 31536000000, 31536000000)
     }
 
-    suspend fun getCurrentUser(): Pair<Int, String> {
+    suspend fun accessToken(code: String): ALOAuth {
         return withIOContext {
-            val query = """
-            |query User {
-                |Viewer {
-                    |id
-                    |mediaListOptions {
-                        |scoreFormat
-                    |}
-                |}
-            |}
-            |
-            """.trimMargin()
-            val payload = buildJsonObject {
-                put("query", query)
-            }
             with(json) {
-                authClient.newCall(
-                    POST(
-                        API_URL,
-                        body = payload.toString().toRequestBody(jsonMime),
-                    ),
-                )
+                client.newCall(accessTokenRequest(code))
                     .awaitSuccess()
-                    .parseAs<ALCurrentUserResult>()
-                    .let {
-                        val viewer = it.data.viewer
-                        Pair(viewer.id, viewer.mediaListOptions.scoreFormat)
-                    }
+                    .parseAs()
             }
         }
+    }
+
+    private fun accessTokenRequest(code: String) = POST(
+        OAUTH_URL,
+        body = FormBody.Builder()
+            .add("grant_type", "authorization_code")
+            .add("client_id", CLIENT_ID)
+            .add("client_secret", CLIENT_SECRET)
+            .add("redirect_uri", REDIRECT_URL)
+            .add("code", code)
+            .build(),
+    )
+
+    suspend fun getCurrentUser(): Pair<Int, String> {
+        return withIOContext {
+            val response = apolloClient.query(ViewerSettingsQuery()).execute()
+            throwIfApolloFailed(response.errors)
+            val viewer = response.data?.Viewer ?: throw Exception("Unable to fetch AniList viewer")
+            val scoreFormat = viewer.userSettings.mediaListOptions?.scoreFormat?.rawValue ?: Anilist.POINT_10
+            Pair(viewer.id, scoreFormat)
+        }
+    }
+
+    suspend fun getHomeDashboard(limit: Int = 6): HomeDashboard {
+        return withIOContext {
+            coroutineScope {
+                val viewerDeferred = async {
+                    val response = apolloClient.query(ViewerUserInfoQuery()).execute()
+                    throwIfApolloFailed(response.errors)
+                    val viewer = response.data?.Viewer ?: throw Exception("Unable to fetch AniList viewer")
+                    val userInfo = viewer.userInfo
+                    HomeViewer(
+                        id = viewer.id,
+                        name = userInfo.name,
+                        avatarUrl = userInfo.avatar?.large,
+                        bannerImageUrl = userInfo.bannerImage,
+                        aboutHtml = userInfo.about,
+                        profileColor = userInfo.options?.profileColor,
+                        titleLanguage = userInfo.options?.titleLanguage?.rawValue,
+                        scoreFormat = userInfo.mediaListOptions?.commonMediaListOptions?.scoreFormat?.rawValue,
+                    )
+                }
+
+                val unreadNotificationsDeferred = async {
+                    val response = apolloClient.query(UnreadNotificationCountQuery()).execute()
+                    throwIfApolloFailed(response.errors)
+                    response.data?.Viewer?.unreadNotificationCount ?: 0
+                }
+
+                val airingDeferred = async {
+                    val response = apolloClient.query(
+                        AiringOnMyListQuery(
+                            page = Optional.present(1),
+                            perPage = Optional.present(limit),
+                        ),
+                    ).execute()
+                    throwIfApolloFailed(response.errors)
+                    response.data?.Page?.media.orEmpty()
+                        .filterNotNull()
+                        .map { media ->
+                            val details = media.basicMediaDetails
+                            val entry = media.mediaListEntry?.basicMediaListEntry
+                            HomeAiringMedia(
+                                id = media.id,
+                                title = details.title?.userPreferred ?: "Untitled",
+                                coverImageUrl = media.coverImage?.large,
+                                coverColor = null,
+                                meanScore = media.meanScore,
+                                nextEpisode = entry?.progress?.plus(1),
+                                timeUntilAiringSeconds = media.nextAiringEpisode?.timeUntilAiring,
+                                listStatus = entry?.status?.rawValue,
+                                progress = entry?.progress,
+                                totalEpisodes = details.episodes,
+                                mediaType = details.type?.rawValue,
+                            )
+                        }
+                }
+
+                HomeDashboard(
+                    viewer = viewerDeferred.await(),
+                    unreadNotifications = unreadNotificationsDeferred.await(),
+                    airingMedia = airingDeferred.await(),
+                )
+            }
+        }
+    }
+
+    private fun createDateInput(dateValue: Long): FuzzyDateInput? {
+        if (dateValue == 0L) return null
+        val dateTime = ZonedDateTime.ofInstant(Instant.ofEpochMilli(dateValue), ZoneId.systemDefault())
+        return FuzzyDateInput(
+            year = Optional.present(dateTime.year),
+            month = Optional.present(dateTime.monthValue),
+            day = Optional.present(dateTime.dayOfMonth),
+        )
     }
 
     private fun createDate(dateValue: Long): JsonObject {
@@ -567,11 +562,14 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
     }
 
     companion object {
-        private const val CLIENT_ID = "5338"
+        private const val CLIENT_ID = "33523"
+        private const val CLIENT_SECRET = "spCWPTMapryGIQwRZ3djJGSKtzCMXB8udNRyDwxX"
         private const val API_URL = "https://graphql.anilist.co/"
         private const val BASE_URL = "https://anilist.co/api/v2/"
+        private const val OAUTH_URL = "${BASE_URL}oauth/token"
         private const val BASE_MANGA_URL = "https://anilist.co/manga/"
         private const val BASE_ANIME_URL = "https://anilist.co/anime/"
+        private const val REDIRECT_URL = "aniyomi://anilist-auth"
 
         fun mangaUrl(mediaId: Long): String {
             return BASE_MANGA_URL + mediaId
@@ -583,7 +581,39 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
 
         fun authUrl(): Uri = "${BASE_URL}oauth/authorize".toUri().buildUpon()
             .appendQueryParameter("client_id", CLIENT_ID)
-            .appendQueryParameter("response_type", "token")
+            .appendQueryParameter("response_type", "code")
+            .appendQueryParameter("redirect_uri", REDIRECT_URL)
             .build()
     }
+
+    data class HomeDashboard(
+        val viewer: HomeViewer,
+        val unreadNotifications: Int,
+        val airingMedia: List<HomeAiringMedia>,
+    )
+
+    data class HomeViewer(
+        val id: Int,
+        val name: String,
+        val avatarUrl: String?,
+        val bannerImageUrl: String?,
+        val aboutHtml: String?,
+        val profileColor: String?,
+        val titleLanguage: String?,
+        val scoreFormat: String?,
+    )
+
+    data class HomeAiringMedia(
+        val id: Int,
+        val title: String,
+        val coverImageUrl: String?,
+        val coverColor: String?,
+        val meanScore: Int?,
+        val nextEpisode: Int?,
+        val timeUntilAiringSeconds: Int?,
+        val listStatus: String?,
+        val progress: Int?,
+        val totalEpisodes: Int?,
+        val mediaType: String?,
+    )
 }
