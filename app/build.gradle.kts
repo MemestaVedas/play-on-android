@@ -325,11 +325,6 @@ dependencies {
     implementation(aniyomilibs.truetypeparser)
 }
 
-apollo {
-    service("anilist") {
-        packageName.set("eu.kanade.tachiyomi.data.track.anilist.apollo")
-    }
-}
 
 androidComponents {
     beforeVariants { variantBuilder ->

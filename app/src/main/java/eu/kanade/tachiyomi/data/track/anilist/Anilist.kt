@@ -346,10 +346,17 @@ class Anilist(id: Long) :
     suspend fun login(token: String) {
         try {
             val oauth = api.createOAuth(token)
+            // Save OAuth token first before making any API calls
             interceptor.setAuth(oauth)
-            val (username, scoreType) = api.getCurrentUser()
-            scorePreference.set(scoreType)
-            saveCredentials(username.toString(), oauth.accessToken)
+            // Try to fetch user info for display and score preferences
+            try {
+                val (username, scoreType) = api.getCurrentUser()
+                scorePreference.set(scoreType)
+                saveCredentials(username.toString(), oauth.accessToken)
+            } catch (e: Throwable) {
+                // Fallback: save token-based credentials even if user info fetch fails
+                saveCredentials(oauth.accessToken, oauth.accessToken)
+            }
         } catch (e: Throwable) {
             logout()
         }
@@ -358,10 +365,17 @@ class Anilist(id: Long) :
     suspend fun loginWithCode(code: String) {
         try {
             val oauth = api.accessToken(code)
+            // Save OAuth token first, before making any API calls
             interceptor.setAuth(oauth)
-            val (username, scoreType) = api.getCurrentUser()
-            scorePreference.set(scoreType)
-            saveCredentials(username.toString(), oauth.accessToken)
+            // Try to fetch user info for display and score preferences
+            try {
+                val (username, scoreType) = api.getCurrentUser()
+                scorePreference.set(scoreType)
+                saveCredentials(username.toString(), oauth.accessToken)
+            } catch (e: Throwable) {
+                // Fallback: save token-based credentials even if user info fetch fails
+                saveCredentials(oauth.accessToken, oauth.accessToken)
+            }
         } catch (e: Throwable) {
             logout()
         }

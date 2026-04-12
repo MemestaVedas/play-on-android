@@ -8,6 +8,7 @@ class TrackLoginActivity : BaseOAuthLoginActivity() {
 
     override fun handleResult(data: Uri?) {
         when (data?.host) {
+            "auth" -> handleAnilist(data)
             "anilist-auth" -> handleAnilist(data)
             "bangumi-auth" -> handleBangumi(data)
             "myanimelist-auth" -> handleMyAnimeList(data)

@@ -13,7 +13,7 @@ class GetAnilistViewerProfile {
     suspend operator fun invoke(): DataResult<AnilistUserInfo> {
         return try {
             val response = apolloClient.query(ViewerUserInfoQuery()).execute()
-            val viewer = response.data?.Viewer
+            val viewer = response.data?.Viewer?.userInfo
                 ?: return DataResult.Error(response.errors?.firstOrNull()?.message ?: "Unable to fetch viewer")
 
             DataResult.Success(
@@ -25,7 +25,7 @@ class GetAnilistViewerProfile {
                     aboutHtml = viewer.about,
                     profileColor = viewer.options?.profileColor,
                     titleLanguage = viewer.options?.titleLanguage?.rawValue,
-                    scoreFormat = viewer.mediaListOptions?.scoreFormat?.rawValue,
+                    scoreFormat = viewer.mediaListOptions?.commonMediaListOptions?.scoreFormat?.rawValue,
                     siteUrl = viewer.siteUrl,
                 ),
             )
