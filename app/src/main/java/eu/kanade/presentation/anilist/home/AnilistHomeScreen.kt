@@ -10,9 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -25,7 +22,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.Alignment
@@ -174,12 +170,12 @@ private fun HeroCard(
     onRetry: () -> Unit,
 ) {
     val viewer = dashboard.viewer
-    val accent = profileColor(viewer.profileColor)
+    val accent = profileContainerColor(viewer.profileColor)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = accent.copy(alpha = 0.18f)),
-        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = accent),
+        shape = MaterialTheme.shapes.extraLarge,
     ) {
         Column(
             modifier = Modifier.padding(20.dp),
@@ -191,7 +187,7 @@ private fun HeroCard(
                     contentDescription = viewer.name,
                     modifier = Modifier
                         .size(72.dp)
-                        .clip(CircleShape),
+                        .clip(MaterialTheme.shapes.medium),
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
@@ -202,7 +198,7 @@ private fun HeroCard(
                         text = buildList {
                             viewer.titleLanguage?.let { add(it.lowercase().replaceFirstChar(Char::titlecase)) }
                             viewer.scoreFormat?.let { add(it) }
-                        }.joinToString(" ┬╖ "),
+                        }.joinToString(" | "),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodyMedium,
                     )
@@ -250,7 +246,10 @@ private fun SectionHeader(
 private fun EmptyStateCard() {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        ),
     ) {
         Text(
             text = "No airing entries found on your AniList list yet.",
@@ -265,7 +264,10 @@ private fun EmptyStateCard() {
 private fun AiringCard(media: AnilistApi.HomeAiringMedia) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -276,7 +278,7 @@ private fun AiringCard(media: AnilistApi.HomeAiringMedia) {
                 contentDescription = media.title,
                 modifier = Modifier
                     .size(width = 88.dp, height = 124.dp)
-                    .clip(RoundedCornerShape(16.dp)),
+                    .clip(MaterialTheme.shapes.medium),
             )
 
             Column(
@@ -292,11 +294,11 @@ private fun AiringCard(media: AnilistApi.HomeAiringMedia) {
                     text = buildString {
                         media.nextEpisode?.let { append("Episode ").append(it) }
                         media.timeUntilAiringSeconds?.let {
-                            if (isNotEmpty()) append(" ┬╖ ")
+                            if (isNotEmpty()) append(" | ")
                             append(formatTimeUntilAiring(it))
                         }
                         media.progress?.let {
-                            if (isNotEmpty()) append(" ┬╖ ")
+                            if (isNotEmpty()) append(" | ")
                             append("Progress ").append(it)
                         }
                     },
@@ -316,21 +318,31 @@ private fun AiringCard(media: AnilistApi.HomeAiringMedia) {
 
 @Composable
 private fun StatusChip(label: String) {
-    AssistChip(onClick = {}, label = { Text(label) })
-}
-
-private fun profileColor(value: String?): Color {
-    return when (value?.lowercase()) {
-        "blue" -> Color(0xFF4F8EF7)
-        "purple" -> Color(0xFF7C6EF2)
-        "pink" -> Color(0xFFE14CAA)
-        "orange" -> Color(0xFFF38A2E)
-        "red" -> Color(0xFFEA5A56)
-        "green" -> Color(0xFF3BB273)
-        "gray" -> Color(0xFF7A828E)
-        else -> Color(0xFF4F8EF7)
+    Surface(
+        shape = MaterialTheme.shapes.small,
+        color = MaterialTheme.colorScheme.secondaryContainer,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSecondaryContainer,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+        )
     }
 }
+
+@Composable
+private fun profileContainerColor(value: String?) =
+    when (value?.lowercase()) {
+        "blue" -> MaterialTheme.colorScheme.primaryContainer
+        "purple" -> MaterialTheme.colorScheme.tertiaryContainer
+        "pink" -> MaterialTheme.colorScheme.tertiaryContainer
+        "orange" -> MaterialTheme.colorScheme.secondaryContainer
+        "red" -> MaterialTheme.colorScheme.errorContainer
+        "green" -> MaterialTheme.colorScheme.secondaryContainer
+        "gray" -> MaterialTheme.colorScheme.surfaceContainerHigh
+        else -> MaterialTheme.colorScheme.surfaceContainer
+    }
 
 private fun formatTimeUntilAiring(seconds: Int): String {
     val duration = Duration.ofSeconds(seconds.toLong())
