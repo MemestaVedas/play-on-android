@@ -509,6 +509,7 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                         profileColor = userInfo.options?.profileColor,
                         titleLanguage = userInfo.options?.titleLanguage?.rawValue,
                         scoreFormat = userInfo.mediaListOptions?.commonMediaListOptions?.scoreFormat?.rawValue,
+                        siteUrl = userInfo.siteUrl,
                     )
                 }
 
@@ -568,7 +569,7 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                                 id = media?.id ?: entry.id,
                                 title = media?.basicMediaDetails?.title?.userPreferred ?: "Untitled",
                                 coverImageUrl = media?.coverImage?.large,
-                                progress = entry.commonMediaListEntry.progress,
+                                progress = entry.commonMediaListEntry.basicMediaListEntry.progress,
                                 totalChapters = media?.basicMediaDetails?.chapters,
                                 mediaType = media?.basicMediaDetails?.type?.rawValue,
                             )
@@ -630,8 +631,8 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                         .filterNotNull()
                         .mapNotNull { activity ->
                             when {
-                                activity.onListActivityFragment != null -> {
-                                    val list = activity.onListActivityFragment
+                                activity.onListActivity != null -> {
+                                    val list = activity.onListActivity.listActivityFragment
                                     HomeActivity(
                                         id = list.id,
                                         userName = list.user?.activityUser?.name ?: "Unknown",
@@ -647,8 +648,8 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                                         replies = list.replyCount ?: 0,
                                     )
                                 }
-                                activity.onTextActivityFragment != null -> {
-                                    val text = activity.onTextActivityFragment
+                                activity.onTextActivity != null -> {
+                                    val text = activity.onTextActivity.textActivityFragment
                                     HomeActivity(
                                         id = text.id,
                                         userName = text.user?.activityUser?.name ?: "Unknown",
@@ -664,8 +665,8 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                                         replies = text.replyCount ?: 0,
                                     )
                                 }
-                                activity.onMessageActivityFragment != null -> {
-                                    val message = activity.onMessageActivityFragment
+                                activity.onMessageActivity != null -> {
+                                    val message = activity.onMessageActivity.messageActivityFragment
                                     HomeActivity(
                                         id = message.id,
                                         userName = message.messenger?.activityUser?.name ?: "Unknown",
@@ -770,6 +771,7 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
         val profileColor: String?,
         val titleLanguage: String?,
         val scoreFormat: String?,
+        val siteUrl: String?,
     )
 
     data class HomeAiringMedia(
