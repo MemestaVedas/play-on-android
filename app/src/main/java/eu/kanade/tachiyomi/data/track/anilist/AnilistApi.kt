@@ -11,6 +11,10 @@ import eu.kanade.tachiyomi.data.track.anilist.dto.ALOAuth
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALSearchResult
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALUserListEntryQueryResult
 import eu.kanade.tachiyomi.data.track.anilist.apollo.AiringOnMyListQuery
+import eu.kanade.tachiyomi.data.track.anilist.apollo.UserActivityQuery
+import eu.kanade.tachiyomi.data.track.anilist.apollo.UserMediaListQuery
+import eu.kanade.tachiyomi.data.track.anilist.apollo.UserStatsAnimeOverviewQuery
+import eu.kanade.tachiyomi.data.track.anilist.apollo.UserStatsMangaOverviewQuery
 import eu.kanade.tachiyomi.data.track.anilist.apollo.UnreadNotificationCountQuery
 import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
@@ -19,7 +23,10 @@ import eu.kanade.tachiyomi.data.track.anilist.apollo.UpdateEntryMutation
 import eu.kanade.tachiyomi.data.track.anilist.apollo.ViewerUserInfoQuery
 import eu.kanade.tachiyomi.data.track.anilist.apollo.ViewerSettingsQuery
 import eu.kanade.tachiyomi.data.track.anilist.apollo.type.FuzzyDateInput
+import eu.kanade.tachiyomi.data.track.anilist.apollo.type.ActivitySort
+import eu.kanade.tachiyomi.data.track.anilist.apollo.type.MediaListSort
 import eu.kanade.tachiyomi.data.track.anilist.apollo.type.MediaListStatus
+import eu.kanade.tachiyomi.data.track.anilist.apollo.type.MediaType
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.awaitSuccess
 import eu.kanade.tachiyomi.network.interceptor.rateLimit
@@ -56,7 +63,7 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
         .rateLimit(permits = 85, period = 1.minutes)
         .build()
 
-    private val apolloClient = ApolloClient.Builder()
+    val apolloClient = ApolloClient.Builder()
         .serverUrl(API_URL)
         .okHttpClient(authClient)
         .build()
@@ -540,10 +547,153 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                         }
                 }
 
+                val readingDeferred = async {
+                    val response = apolloClient.query(
+                        UserMediaListQuery(
+                            page = Optional.present(1),
+                            perPage = Optional.present(limit),
+                            userId = Optional.present(viewerDeferred.await().id),
+                            type = Optional.present(MediaType.MANGA),
+                            statusIn = Optional.present(listOf(MediaListStatus.CURRENT)),
+                            sort = Optional.present(listOf(MediaListSort.UPDATED_TIME_DESC)),
+                        ),
+                    ).execute()
+                    throwIfApolloFailed(response.errors)
+
+                    response.data?.Page?.mediaList.orEmpty()
+                        .filterNotNull()
+                        .map { entry ->
+                            val media = entry.commonMediaListEntry.media
+                            HomeReadingMedia(
+                                id = media?.id ?: entry.id,
+                                title = media?.basicMediaDetails?.title?.userPreferred ?: "Untitled",
+                                coverImageUrl = media?.coverImage?.large,
+                                progress = entry.commonMediaListEntry.progress,
+                                totalChapters = media?.basicMediaDetails?.chapters,
+                                mediaType = media?.basicMediaDetails?.type?.rawValue,
+                            )
+                        }
+                }
+
+                val animeOverviewDeferred = async {
+                    val response = apolloClient.query(
+                        UserStatsAnimeOverviewQuery(
+                            userId = Optional.present(viewerDeferred.await().id),
+                        ),
+                    ).execute()
+                    throwIfApolloFailed(response.errors)
+
+                    val animeStats = response.data?.User?.statistics?.anime
+                    HomeAnimeStats(
+                        totalAnime = animeStats?.count,
+                        episodesWatched = animeStats?.episodesWatched,
+                        minutesWatched = animeStats?.minutesWatched,
+                        formatBreakdown = animeStats?.formats.orEmpty()
+                            .filterNotNull()
+                            .mapNotNull { format ->
+                                val label = format.format?.rawValue ?: return@mapNotNull null
+                                val count = format.count ?: 0
+                                HomeBreakdownItem(label = label, value = count)
+                            }
+                            .sortedByDescending { it.value },
+                    )
+                }
+
+                val mangaOverviewDeferred = async {
+                    val response = apolloClient.query(
+                        UserStatsMangaOverviewQuery(
+                            userId = Optional.present(viewerDeferred.await().id),
+                        ),
+                    ).execute()
+                    throwIfApolloFailed(response.errors)
+
+                    val mangaStats = response.data?.User?.statistics?.manga
+                    HomeMangaStats(
+                        totalManga = mangaStats?.count,
+                        chaptersRead = mangaStats?.chaptersRead,
+                        volumesRead = mangaStats?.volumesRead,
+                    )
+                }
+
+                val activityDeferred = async {
+                    val response = apolloClient.query(
+                        UserActivityQuery(
+                            page = Optional.present(1),
+                            perPage = Optional.present(4),
+                            userId = Optional.present(viewerDeferred.await().id),
+                            sort = Optional.present(listOf(ActivitySort.ID_DESC)),
+                        ),
+                    ).execute()
+                    throwIfApolloFailed(response.errors)
+
+                    response.data?.Page?.activities.orEmpty()
+                        .filterNotNull()
+                        .mapNotNull { activity ->
+                            when {
+                                activity.onListActivityFragment != null -> {
+                                    val list = activity.onListActivityFragment
+                                    HomeActivity(
+                                        id = list.id,
+                                        userName = list.user?.activityUser?.name ?: "Unknown",
+                                        userAvatarUrl = list.user?.activityUser?.avatar?.medium,
+                                        action = list.status ?: "updated",
+                                        mediaId = list.media?.id,
+                                        mediaType = "ANIME",
+                                        mediaTitle = list.media?.title?.userPreferred,
+                                        mediaCoverUrl = list.media?.coverImage?.medium,
+                                        text = null,
+                                        createdAt = list.createdAt,
+                                        likes = list.likeCount ?: 0,
+                                        replies = list.replyCount ?: 0,
+                                    )
+                                }
+                                activity.onTextActivityFragment != null -> {
+                                    val text = activity.onTextActivityFragment
+                                    HomeActivity(
+                                        id = text.id,
+                                        userName = text.user?.activityUser?.name ?: "Unknown",
+                                        userAvatarUrl = text.user?.activityUser?.avatar?.medium,
+                                        action = "posted",
+                                        mediaId = null,
+                                        mediaType = null,
+                                        mediaTitle = null,
+                                        mediaCoverUrl = null,
+                                        text = text.text,
+                                        createdAt = text.createdAt,
+                                        likes = text.likeCount ?: 0,
+                                        replies = text.replyCount ?: 0,
+                                    )
+                                }
+                                activity.onMessageActivityFragment != null -> {
+                                    val message = activity.onMessageActivityFragment
+                                    HomeActivity(
+                                        id = message.id,
+                                        userName = message.messenger?.activityUser?.name ?: "Unknown",
+                                        userAvatarUrl = message.messenger?.activityUser?.avatar?.medium,
+                                        action = "messaged",
+                                        mediaId = null,
+                                        mediaType = null,
+                                        mediaTitle = null,
+                                        mediaCoverUrl = null,
+                                        text = message.message,
+                                        createdAt = message.createdAt,
+                                        likes = message.likeCount ?: 0,
+                                        replies = message.replyCount ?: 0,
+                                    )
+                                }
+                                else -> null
+                            }
+                        }
+                }
+
                 HomeDashboard(
                     viewer = viewerDeferred.await(),
                     unreadNotifications = unreadNotificationsDeferred.await(),
                     airingMedia = airingDeferred.await(),
+                    readingMedia = readingDeferred.await(),
+                    animeStats = animeOverviewDeferred.await(),
+                    mangaStats = mangaOverviewDeferred.await(),
+                    activityFeed = activityDeferred.await(),
                 )
             }
         }
@@ -605,6 +755,10 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
         val viewer: HomeViewer,
         val unreadNotifications: Int,
         val airingMedia: List<HomeAiringMedia>,
+        val readingMedia: List<HomeReadingMedia>,
+        val animeStats: HomeAnimeStats,
+        val mangaStats: HomeMangaStats,
+        val activityFeed: List<HomeActivity>,
     )
 
     data class HomeViewer(
@@ -630,5 +784,47 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
         val progress: Int?,
         val totalEpisodes: Int?,
         val mediaType: String?,
+    )
+
+    data class HomeReadingMedia(
+        val id: Int,
+        val title: String,
+        val coverImageUrl: String?,
+        val progress: Int?,
+        val totalChapters: Int?,
+        val mediaType: String?,
+    )
+
+    data class HomeAnimeStats(
+        val totalAnime: Int?,
+        val episodesWatched: Int?,
+        val minutesWatched: Int?,
+        val formatBreakdown: List<HomeBreakdownItem>,
+    )
+
+    data class HomeMangaStats(
+        val totalManga: Int?,
+        val chaptersRead: Int?,
+        val volumesRead: Int?,
+    )
+
+    data class HomeBreakdownItem(
+        val label: String,
+        val value: Int,
+    )
+
+    data class HomeActivity(
+        val id: Int,
+        val userName: String,
+        val userAvatarUrl: String?,
+        val action: String,
+        val mediaId: Int?,
+        val mediaType: String?,
+        val mediaTitle: String?,
+        val mediaCoverUrl: String?,
+        val text: String?,
+        val createdAt: Int?,
+        val likes: Int,
+        val replies: Int,
     )
 }
