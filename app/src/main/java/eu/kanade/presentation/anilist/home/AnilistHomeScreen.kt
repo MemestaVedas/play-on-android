@@ -50,13 +50,15 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.model.rememberScreenModel
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import coil3.compose.AsyncImage
+import eu.kanade.presentation.anilist.details.AnilistFavoritesScreen
+import eu.kanade.presentation.anilist.details.AnilistMediaDetailsScreen
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.data.track.anilist.AnilistApi
 import java.time.Duration
@@ -103,8 +105,6 @@ private fun LoadingState() {
 
 @Composable
 private fun GuestState() {
-    val uriHandler = LocalUriHandler.current
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -122,12 +122,6 @@ private fun GuestState() {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        OutlinedButton(
-            onClick = { uriHandler.openUri(AnilistApi.authUrl().toString()) },
-            modifier = Modifier.padding(top = 20.dp),
-        ) {
-            Text("Log in to AniList")
-        }
     }
 }
 
@@ -167,7 +161,7 @@ private fun HomeContent(
     dashboard: AnilistApi.HomeDashboard,
     onRetry: () -> Unit,
 ) {
-    val uriHandler = LocalUriHandler.current
+    val navigator = LocalNavigator.currentOrThrow
     val notifyToggles = remember { mutableStateMapOf<Int, Boolean>() }
 
     LazyColumn(
@@ -180,7 +174,7 @@ private fun HomeContent(
                 dashboard = dashboard,
                 onRetry = onRetry,
                 onOpenProfile = {
-                    dashboard.viewer.siteUrl?.let { uriHandler.openUri(it) }
+                    navigator.push(AnilistFavoritesScreen(dashboard.viewer.id))
                 },
             )
         }
@@ -189,18 +183,13 @@ private fun HomeContent(
             SectionHeader(
                 title = "Currently Watching",
                 actionLabel = "View All",
-                onActionClick = {
-                    dashboard.viewer.siteUrl
-                        ?.let { "$it/animelist" }
-                        ?.let { uriHandler.openUri(it) }
-                },
             )
         }
 
         item {
             WatchingCarousel(
                 media = dashboard.airingMedia,
-                onOpenItem = { media -> openMedia(uriHandler, media.id, media.mediaType) },
+                onOpenItem = { media -> navigator.push(AnilistMediaDetailsScreen(media.id)) },
             )
         }
 
@@ -208,18 +197,13 @@ private fun HomeContent(
             SectionHeader(
                 title = "Currently Reading",
                 actionLabel = "View All",
-                onActionClick = {
-                    dashboard.viewer.siteUrl
-                        ?.let { "$it/mangalist" }
-                        ?.let { uriHandler.openUri(it) }
-                },
             )
         }
 
         item {
             ReadingCarousel(
                 entries = dashboard.readingMedia,
-                onOpenItem = { media -> openMedia(uriHandler, media.id, media.mediaType) },
+                onOpenItem = { media -> navigator.push(AnilistMediaDetailsScreen(media.id)) },
             )
         }
 
@@ -234,7 +218,7 @@ private fun HomeContent(
                 onToggleNotify = { id ->
                     notifyToggles[id] = !(notifyToggles[id] ?: false)
                 },
-                onOpenItem = { media -> openMedia(uriHandler, media.id, media.mediaType) },
+                onOpenItem = { media -> navigator.push(AnilistMediaDetailsScreen(media.id)) },
             )
         }
 
@@ -255,7 +239,7 @@ private fun HomeContent(
                 dashboard = dashboard,
                 onOpenActivityMedia = { activity ->
                     val mediaId = activity.mediaId ?: return@CommunityFeedSection
-                    openMedia(uriHandler, mediaId, activity.mediaType)
+                    navigator.push(AnilistMediaDetailsScreen(mediaId))
                 },
             )
         }
@@ -296,8 +280,8 @@ private fun TopHeaderCard(
                 )
                 IconButton(onClick = onOpenProfile) {
                     Icon(
-                        imageVector = Icons.Default.Notifications,
-                        contentDescription = "Open AniList profile",
+                        imageVector = Icons.Default.Favorite,
+                        contentDescription = "Open AniList favorites",
                         tint = MaterialTheme.colorScheme.onSurface,
                     )
                 }
@@ -475,40 +459,52 @@ private fun ReadingCarousel(
         contentPadding = PaddingValues(end = 8.dp),
     ) {
         items(entries, key = { it.id }) { item ->
-            Column(
+            Card(
                 modifier = Modifier
-                    .width(112.dp)
+                    .width(258.dp)
                     .clickable { onOpenItem(item) },
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
             ) {
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     AsyncImage(
                         model = item.coverImageUrl,
                         contentDescription = item.title,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .aspectRatio(2f / 3f),
+                            .aspectRatio(16f / 9f)
+                            .clip(RoundedCornerShape(14.dp)),
+                    )
+
+                    LinearProgressIndicator(
+                        progress = { readingProgress(item.progress, item.totalChapters) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(5.dp)
+                            .clip(RoundedCornerShape(999.dp)),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    )
+
+                    Text(
+                        text = item.title,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+
+                    Text(
+                        text = readingSubtitle(item),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
-
-                Text(
-                    text = item.title,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 8.dp),
-                )
-
-                Text(
-                    text = readingSubtitle(item),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
             }
         }
     }
@@ -927,15 +923,6 @@ private fun profileContainerColor(value: String?) =
         else -> MaterialTheme.colorScheme.surfaceContainer
     }
 
-private fun openMedia(uriHandler: UriHandler, mediaId: Int, mediaType: String?) {
-    val url = if (mediaType.equals("MANGA", ignoreCase = true)) {
-        AnilistApi.mangaUrl(mediaId.toLong())
-    } else {
-        AnilistApi.animeUrl(mediaId.toLong())
-    }
-    uriHandler.openUri(url)
-}
-
 private fun formatMinutesWatchTime(minutes: Int?): String {
     val value = minutes ?: return "0h"
     val days = value / (60 * 24)
@@ -951,6 +938,13 @@ private fun readingSubtitle(media: AnilistApi.HomeReadingMedia): String {
     } else {
         "Chapter $progress"
     }
+}
+
+private fun readingProgress(progress: Int?, total: Int?): Float {
+    val current = progress ?: return 0.2f
+    val limit = total ?: return (current / (current + 2f)).coerceIn(0.12f, 0.96f)
+    if (limit <= 0) return 0.2f
+    return (current.toFloat() / limit.toFloat()).coerceIn(0f, 1f)
 }
 
 private fun watchProgress(progress: Int?, total: Int?): Float {

@@ -9,6 +9,7 @@ build
 !.idea/icon.png
 /captures
 AniHyou-android/
+.agents/
 # Configuration files
 local.properties
 

@@ -20,10 +20,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.model.rememberScreenModel
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
+import eu.kanade.presentation.anilist.details.AnilistMediaDetailsScreen
 import eu.kanade.presentation.util.Screen
 import eu.kanade.domain.anilist.model.AnilistSimpleMedia
 
@@ -33,7 +35,7 @@ object AnilistExploreScreen : Screen() {
     override fun Content() {
         val screenModel = rememberScreenModel { AnilistExploreScreenModel() }
         val state by screenModel.state.collectAsState()
-        val uriHandler = LocalUriHandler.current
+        val navigator = LocalNavigator.currentOrThrow
 
         Surface(
             modifier = Modifier.fillMaxSize(),
@@ -86,9 +88,7 @@ object AnilistExploreScreen : Screen() {
                     items(state.items, key = { it.id }) { item ->
                         MediaSearchRow(
                             item = item,
-                            onOpen = {
-                                item.siteUrl?.let(uriHandler::openUri)
-                            },
+                            onOpen = { navigator.push(AnilistMediaDetailsScreen(item.id)) },
                         )
                     }
                 }

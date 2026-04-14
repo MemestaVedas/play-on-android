@@ -65,6 +65,10 @@ import eu.kanade.presentation.components.AppStateBanners
 import eu.kanade.presentation.components.DownloadedOnlyBannerBackgroundColor
 import eu.kanade.presentation.components.IncognitoModeBannerBackgroundColor
 import eu.kanade.presentation.components.IndexingBannerBackgroundColor
+import eu.kanade.presentation.anilist.details.AnilistCharacterDetailsScreen
+import eu.kanade.presentation.anilist.details.AnilistMediaDetailsScreen
+import eu.kanade.presentation.anilist.details.AnilistStaffDetailsScreen
+import eu.kanade.presentation.anilist.details.AnilistStudioDetailsScreen
 import eu.kanade.presentation.more.settings.screen.browse.AnimeExtensionReposScreen
 import eu.kanade.presentation.more.settings.screen.browse.MangaExtensionReposScreen
 import eu.kanade.presentation.more.settings.screen.data.RestoreBackupScreen
@@ -535,23 +539,37 @@ class MainActivity : BaseActivity() {
                 null
             }
             Intent.ACTION_VIEW -> {
-                if (intent.data?.scheme == "https" && intent.data?.host == "anilist.co") {
-                    navigator.push(WebViewScreen(intent.data.toString(), initialTitle = "AniList"))
+                val data = intent.data
+                if (data?.scheme == "https" && data.host in setOf("anilist.co", "www.anilist.co")) {
+                    val pathType = data.pathSegments.firstOrNull()
+                    val id = data.pathSegments.getOrNull(1)?.toIntOrNull()
+                    if (id != null) {
+                        navigator.popUntilRoot()
+                        when (pathType) {
+                            "anime", "manga" -> navigator.push(AnilistMediaDetailsScreen(id))
+                            "character" -> navigator.push(AnilistCharacterDetailsScreen(id))
+                            "staff" -> navigator.push(AnilistStaffDetailsScreen(id))
+                            "studio" -> navigator.push(AnilistStudioDetailsScreen(id))
+                            else -> navigator.push(WebViewScreen(data.toString(), initialTitle = "AniList"))
+                        }
+                    } else {
+                        navigator.push(WebViewScreen(data.toString(), initialTitle = "AniList"))
+                    }
                 }
                 // Handling opening of backup files
-                else if (intent.data.toString().endsWith(".tachibk")) {
+                else if (data.toString().endsWith(".tachibk")) {
                     navigator.popUntilRoot()
-                    navigator.push(RestoreBackupScreen(intent.data.toString()))
+                    navigator.push(RestoreBackupScreen(data.toString()))
                 }
                 // Deep link to add anime extension repo
-                else if (intent.scheme == "playon" && intent.data?.host == "add-repo") {
-                    intent.data?.getQueryParameter("url")?.let { repoUrl ->
+                else if (intent.scheme == "playon" && data?.host == "add-repo") {
+                    data.getQueryParameter("url")?.let { repoUrl ->
                         navigator.popUntilRoot()
                         navigator.push(AnimeExtensionReposScreen(repoUrl))
                     }
                 } // Deep link to add extension repo
-                else if (intent.scheme == "tachiyomi" && intent.data?.host == "add-repo") {
-                    intent.data?.getQueryParameter("url")?.let { repoUrl ->
+                else if (intent.scheme == "tachiyomi" && data?.host == "add-repo") {
+                    data.getQueryParameter("url")?.let { repoUrl ->
                         navigator.popUntilRoot()
                         navigator.push(MangaExtensionReposScreen(repoUrl))
                     }
