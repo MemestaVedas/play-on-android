@@ -348,6 +348,11 @@ apollo {
     }
 }
 
+aboutLibraries {
+    // Keep AboutLibraries in manual mode to avoid eagerly wiring variant tasks that resolve classpaths at configuration time.
+    registerAndroidTasks = false
+}
+
 buildscript {
     dependencies {
         classpath(kotlinx.gradle)
