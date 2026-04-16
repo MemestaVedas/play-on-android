@@ -13,14 +13,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toBitmap
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.TabOptions
-import androidx.core.content.ContextCompat
-import androidx.core.graphics.drawable.toBitmap
 import eu.kanade.presentation.anilist.home.AnilistHomeScreen
 import eu.kanade.presentation.util.Tab
 import eu.kanade.tachiyomi.R

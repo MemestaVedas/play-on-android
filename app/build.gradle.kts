@@ -6,13 +6,10 @@ import mihon.buildlogic.getGitSha
 plugins {
     id("mihon.android.application")
     id("mihon.android.application.compose")
-    id("com.github.zellius.shortcut-helper")
     kotlin("plugin.serialization")
     alias(libs.plugins.apollo)
     alias(libs.plugins.aboutLibraries)
 }
-
-shortcutHelper.setFilePath("./shortcuts.xml")
 
 android {
     namespace = "eu.kanade.tachiyomi"
@@ -176,7 +173,6 @@ kotlin {
             "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
             "-opt-in=androidx.compose.foundation.layout.ExperimentalLayoutApi",
             "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
-            "-opt-in=androidx.compose.material3.ExperimentalMaterial3ExpressiveApi",
             "-opt-in=androidx.compose.ui.ExperimentalComposeUiApi",
             "-opt-in=coil3.annotation.ExperimentalCoilApi",
             "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
@@ -325,7 +321,6 @@ dependencies {
     // true type parser
     implementation(aniyomilibs.truetypeparser)
 }
-
 
 androidComponents {
     beforeVariants { variantBuilder ->

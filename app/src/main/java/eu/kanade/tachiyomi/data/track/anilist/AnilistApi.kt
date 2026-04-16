@@ -7,31 +7,33 @@ import com.apollographql.apollo.api.Optional
 import com.apollographql.apollo.network.okHttpClient
 import eu.kanade.tachiyomi.data.database.models.anime.AnimeTrack
 import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack
-import eu.kanade.tachiyomi.data.track.anilist.dto.ALOAuth
-import eu.kanade.tachiyomi.data.track.anilist.dto.ALSearchResult
-import eu.kanade.tachiyomi.data.track.anilist.dto.ALUserListEntryQueryResult
 import eu.kanade.tachiyomi.data.track.anilist.apollo.AiringOnMyListQuery
+import eu.kanade.tachiyomi.data.track.anilist.apollo.DeleteMediaListMutation
+import eu.kanade.tachiyomi.data.track.anilist.apollo.UnreadNotificationCountQuery
+import eu.kanade.tachiyomi.data.track.anilist.apollo.UpdateEntryMutation
 import eu.kanade.tachiyomi.data.track.anilist.apollo.UserActivityQuery
 import eu.kanade.tachiyomi.data.track.anilist.apollo.UserMediaListQuery
 import eu.kanade.tachiyomi.data.track.anilist.apollo.UserStatsAnimeOverviewQuery
 import eu.kanade.tachiyomi.data.track.anilist.apollo.UserStatsMangaOverviewQuery
-import eu.kanade.tachiyomi.data.track.anilist.apollo.UnreadNotificationCountQuery
-import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
-import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
-import eu.kanade.tachiyomi.data.track.anilist.apollo.DeleteMediaListMutation
-import eu.kanade.tachiyomi.data.track.anilist.apollo.UpdateEntryMutation
-import eu.kanade.tachiyomi.data.track.anilist.apollo.ViewerUserInfoQuery
 import eu.kanade.tachiyomi.data.track.anilist.apollo.ViewerSettingsQuery
-import eu.kanade.tachiyomi.data.track.anilist.apollo.type.FuzzyDateInput
+import eu.kanade.tachiyomi.data.track.anilist.apollo.ViewerUserInfoQuery
 import eu.kanade.tachiyomi.data.track.anilist.apollo.type.ActivitySort
+import eu.kanade.tachiyomi.data.track.anilist.apollo.type.FuzzyDateInput
 import eu.kanade.tachiyomi.data.track.anilist.apollo.type.MediaListSort
 import eu.kanade.tachiyomi.data.track.anilist.apollo.type.MediaListStatus
 import eu.kanade.tachiyomi.data.track.anilist.apollo.type.MediaType
+import eu.kanade.tachiyomi.data.track.anilist.dto.ALOAuth
+import eu.kanade.tachiyomi.data.track.anilist.dto.ALSearchResult
+import eu.kanade.tachiyomi.data.track.anilist.dto.ALUserListEntryQueryResult
+import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
+import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.awaitSuccess
 import eu.kanade.tachiyomi.network.interceptor.rateLimit
 import eu.kanade.tachiyomi.network.jsonMime
 import eu.kanade.tachiyomi.network.parseAs
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -40,8 +42,6 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -68,7 +68,7 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
         .okHttpClient(authClient)
         .build()
 
-    private fun throwIfApolloFailed(errors: List<com.apollographql.apollo.api.Error>?): Unit {
+    private fun throwIfApolloFailed(errors: List<com.apollographql.apollo.api.Error>?) {
         if (!errors.isNullOrEmpty()) {
             throw Exception(errors.first().message)
         }

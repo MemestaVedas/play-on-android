@@ -552,9 +552,21 @@ private fun UpcomingSection(
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             items(weekDays) { (day, date) ->
                 val selected = day == "Monday"
+                val surfaceColor = if (selected) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    MaterialTheme.colorScheme.surfaceContainerHigh
+                }
+
+                val labelColor = if (selected) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                }
+
                 Surface(
                     shape = RoundedCornerShape(999.dp),
-                    color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+                    color = surfaceColor,
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
@@ -563,7 +575,7 @@ private fun UpcomingSection(
                         Text(
                             text = day,
                             style = MaterialTheme.typography.labelLarge,
-                            color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                            color = labelColor,
                         )
                         Text(
                             text = date,
@@ -622,16 +634,37 @@ private fun UpcomingSection(
                     }
 
                     val notified = isNotified(media.id)
+
+                    val notifySurfaceColor = if (notified) {
+                        MaterialTheme.colorScheme.primaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.surfaceContainerHighest
+                    }
+
+                    val notifyTint = if (notified) {
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+
+                    val notifyContentDesc = if (notified) "Disable reminder" else "Enable reminder"
+
+                    val notifyIcon = if (notified) {
+                        Icons.Default.NotificationsActive
+                    } else {
+                        Icons.Default.Notifications
+                    }
+
                     Surface(
                         shape = CircleShape,
-                        color = if (notified) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest,
+                        color = notifySurfaceColor,
                         modifier = Modifier.clickable { onToggleNotify(media.id) },
                     ) {
                         Icon(
-                            imageVector = if (notified) Icons.Default.NotificationsActive else Icons.Default.Notifications,
-                            contentDescription = if (notified) "Disable reminder" else "Enable reminder",
+                            imageVector = notifyIcon,
+                            contentDescription = notifyContentDesc,
                             modifier = Modifier.padding(8.dp),
-                            tint = if (notified) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = notifyTint,
                         )
                     }
                 }

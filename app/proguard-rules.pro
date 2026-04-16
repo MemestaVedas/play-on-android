@@ -1,5 +1,9 @@
 -dontobfuscate
 
+# Suppress R8 Kotlin metadata warnings (Kotlin 2.3.10 + AGP 9.1.0 compatibility)
+# These warnings don't prevent the build from succeeding
+-ignorewarnings
+
 -keep,allowoptimization class eu.kanade.**
 -keep,allowoptimization class tachiyomi.**
 -keep,allowoptimization class mihon.**

@@ -1,7 +1,7 @@
 package eu.kanade.presentation.anilist.details
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,25 +20,25 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -52,7 +52,13 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import coil3.compose.AsyncImage
 import com.apollographql.apollo.api.Optional
+import eu.kanade.domain.entries.anime.interactor.UpdateAnime
+import eu.kanade.domain.entries.anime.model.toDomainAnime
+import eu.kanade.domain.entries.manga.interactor.UpdateManga
+import eu.kanade.domain.entries.manga.model.toDomainManga
+import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.presentation.util.Screen
+import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.data.track.anilist.AnilistApi
 import eu.kanade.tachiyomi.data.track.anilist.AnilistInterceptor
 import eu.kanade.tachiyomi.data.track.anilist.apollo.CharacterDetailsQuery
@@ -68,11 +74,19 @@ import eu.kanade.tachiyomi.data.track.anilist.apollo.UserFavoritesMangaQuery
 import eu.kanade.tachiyomi.data.track.anilist.apollo.UserFavoritesStaffQuery
 import eu.kanade.tachiyomi.data.track.anilist.apollo.UserFavoritesStudioQuery
 import eu.kanade.tachiyomi.data.track.anilist.apollo.type.MediaType
-import eu.kanade.tachiyomi.data.track.TrackerManager
+import eu.kanade.tachiyomi.ui.entries.anime.AnimeScreen
+import eu.kanade.tachiyomi.ui.entries.manga.MangaScreen
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.update
 import tachiyomi.core.common.util.lang.launchIO
+import tachiyomi.domain.entries.anime.interactor.NetworkToLocalAnime
+import tachiyomi.domain.entries.manga.interactor.NetworkToLocalManga
+import tachiyomi.domain.source.anime.service.AnimeSourceManager
+import tachiyomi.domain.source.manga.service.MangaSourceManager
+import tachiyomi.presentation.core.components.material.TabText
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
@@ -86,7 +100,7 @@ class AnilistMediaDetailsScreen(private val mediaId: Int) : Screen() {
         when (val currentState = state) {
             AnilistMediaDetailsScreenModel.State.Loading -> LoadingScreen()
             is AnilistMediaDetailsScreenModel.State.Error -> ErrorScreen(currentState.message, screenModel::refresh)
-            is AnilistMediaDetailsScreenModel.State.Ready -> MediaDetailsContent(
+            is AnilistMediaDetailsScreenModel.State.Ready -> MediaDetailsTabbedContent(
                 details = currentState.details,
                 credits = currentState.credits,
                 onRetry = screenModel::refresh,
@@ -297,7 +311,13 @@ private class AnilistCharacterDetailsScreenModel(
                         api.apolloClient.query(CharacterDetailsQuery(Optional.present(characterId))).execute()
                     }
                     val credits = async {
-                        api.apolloClient.query(CharacterMediaQuery(Optional.present(characterId), Optional.present(1), Optional.present(24))).execute()
+                        api.apolloClient.query(
+                            CharacterMediaQuery(
+                                Optional.present(characterId),
+                                Optional.present(1),
+                                Optional.present(24),
+                            ),
+                        ).execute()
                     }
                     val detailsResponse = details.await()
                     val creditsResponse = credits.await()
@@ -349,7 +369,14 @@ private class AnilistStaffDetailsScreenModel(
                         api.apolloClient.query(StaffDetailsQuery(Optional.present(staffId))).execute()
                     }
                     val credits = async {
-                        api.apolloClient.query(StaffMediaQuery(Optional.present(staffId), Optional.present(false), Optional.present(1), Optional.present(24))).execute()
+                        api.apolloClient.query(
+                            StaffMediaQuery(
+                                Optional.present(staffId),
+                                Optional.present(false),
+                                Optional.present(1),
+                                Optional.present(24),
+                            ),
+                        ).execute()
                     }
                     val detailsResponse = details.await()
                     val creditsResponse = credits.await()
@@ -396,9 +423,11 @@ private class AnilistStudioDetailsScreenModel(
         screenModelScope.launchIO {
             mutableState.update { State.Loading }
             runCatching {
-                val response = api.apolloClient.query(StudioDetailsQuery(Optional.present(studioId), Optional.present(24))).execute()
-                    response.errors?.firstOrNull()?.message?.let { throw Exception(it) }
-                    State.Ready(response.data)
+                val response = api.apolloClient.query(
+                    StudioDetailsQuery(Optional.present(studioId), Optional.present(24)),
+                ).execute()
+                response.errors?.firstOrNull()?.message?.let { throw Exception(it) }
+                State.Ready(response.data)
             }.onSuccess { newState -> mutableState.update { newState } }
                 .onFailure { throwable ->
                     mutableState.update { State.Error(throwable.message ?: "Unable to load AniList") }
@@ -433,19 +462,49 @@ private class AnilistFavoritesScreenModel(
             runCatching {
                 coroutineScope {
                     val anime = async {
-                        api.apolloClient.query(UserFavoritesAnimeQuery(Optional.present(userId), Optional.present(1), Optional.present(24))).execute()
+                        api.apolloClient.query(
+                            UserFavoritesAnimeQuery(
+                                Optional.present(userId),
+                                Optional.present(1),
+                                Optional.present(24),
+                            ),
+                        ).execute()
                     }
                     val manga = async {
-                        api.apolloClient.query(UserFavoritesMangaQuery(Optional.present(userId), Optional.present(1), Optional.present(24))).execute()
+                        api.apolloClient.query(
+                            UserFavoritesMangaQuery(
+                                Optional.present(userId),
+                                Optional.present(1),
+                                Optional.present(24),
+                            ),
+                        ).execute()
                     }
                     val characters = async {
-                        api.apolloClient.query(UserFavoritesCharacterQuery(Optional.present(userId), Optional.present(1), Optional.present(24))).execute()
+                        api.apolloClient.query(
+                            UserFavoritesCharacterQuery(
+                                Optional.present(userId),
+                                Optional.present(1),
+                                Optional.present(24),
+                            ),
+                        ).execute()
                     }
                     val staff = async {
-                        api.apolloClient.query(UserFavoritesStaffQuery(Optional.present(userId), Optional.present(1), Optional.present(24))).execute()
+                        api.apolloClient.query(
+                            UserFavoritesStaffQuery(
+                                Optional.present(userId),
+                                Optional.present(1),
+                                Optional.present(24),
+                            ),
+                        ).execute()
                     }
                     val studios = async {
-                        api.apolloClient.query(UserFavoritesStudioQuery(Optional.present(userId), Optional.present(1), Optional.present(24))).execute()
+                        api.apolloClient.query(
+                            UserFavoritesStudioQuery(
+                                Optional.present(userId),
+                                Optional.present(1),
+                                Optional.present(24),
+                            ),
+                        ).execute()
                     }
 
                     val animeResponse = anime.await()
@@ -485,6 +544,442 @@ private class AnilistFavoritesScreenModel(
         data class Error(val message: String) : State
     }
 }
+
+@Composable
+private fun MediaDetailsTabbedContent(
+    details: MediaDetailsQuery.Data?,
+    credits: MediaCharactersAndStaffQuery.Data?,
+    onRetry: () -> Unit,
+) {
+    val media = details?.Media
+
+    if (media == null) {
+        ErrorScreen("Media details were unavailable", onRetry)
+        return
+    }
+
+    val watchState by produceState<WatchSearchState>(initialValue = WatchSearchState.Loading, key1 = media.id) {
+        value = searchWatchState(media)
+    }
+
+    var selectedTab by rememberSaveable(media.id) { mutableIntStateOf(0) }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        PrimaryTabRow(selectedTabIndex = selectedTab) {
+            Tab(
+                selected = selectedTab == 0,
+                onClick = { selectedTab = 0 },
+                text = {
+                    TabText(
+                        text = "Details",
+                    )
+                },
+            )
+            Tab(
+                selected = selectedTab == 1,
+                onClick = { selectedTab = 1 },
+                text = {
+                    TabText(
+                        text = if (media.basicMediaDetails.type == MediaType.MANGA) "Read" else "Watch",
+                        badgeCount = watchState.resultCount.takeIf { it > 0 },
+                    )
+                },
+            )
+        }
+
+        Box(modifier = Modifier.weight(1f)) {
+            when (selectedTab) {
+                0 -> MediaDetailsContent(
+                    details = details,
+                    credits = credits,
+                    onRetry = onRetry,
+                )
+
+                else -> MediaWatchContent(
+                    media = media,
+                    watchState = watchState,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MediaWatchContent(
+    media: MediaDetailsQuery.Media,
+    watchState: WatchSearchState,
+) {
+    val navigator = LocalNavigator.currentOrThrow
+    val scope = rememberCoroutineScope()
+    val isAnime = media.basicMediaDetails.type == MediaType.ANIME
+    val updateAnime = remember { Injekt.get<UpdateAnime>() }
+    val updateManga = remember { Injekt.get<UpdateManga>() }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            text = if (isAnime) "Watch" else "Read",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            text = watchState.subtitle,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+
+                    val badgeSurfaceColor = if (watchState.resultCount > 0) {
+                        MaterialTheme.colorScheme.primaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.surfaceContainerHigh
+                    }
+
+                    val badgeTextColor = if (watchState.resultCount > 0) {
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+
+                    Surface(
+                        shape = CircleShape,
+                        color = badgeSurfaceColor,
+                    ) {
+                        Text(
+                            text = watchState.resultCount.toString(),
+                            color = badgeTextColor,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                }
+
+                val watchStateText = when (watchState) {
+                    WatchSearchState.Loading -> "Searching installed sources automatically."
+                    WatchSearchState.Empty -> "No matches found in installed sources."
+                    is WatchSearchState.Ready ->
+                        "Matched ${watchState.query} in ${watchState.resultCount} result${if (watchState.resultCount == 1) "" else "s"}."
+                }
+
+                Text(
+                    text = watchStateText,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+        }
+
+        when (val state = watchState) {
+            WatchSearchState.Loading -> {
+                item {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        CircularProgressIndicator()
+                        Text(
+                            text = "Searching sources...",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+
+            WatchSearchState.Empty -> {
+                item {
+                    DetailSection(title = "No results") {
+                        Text(
+                            text = "All installed sources were checked using the title priority order.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                }
+            }
+
+            is WatchSearchState.Ready -> {
+                items(state.results, key = { it.id }) { result ->
+                    WatchResultCard(
+                        result = result,
+                        isAnime = isAnime,
+                        onOpen = {
+                            navigator.push(if (isAnime) AnimeScreen(result.id) else MangaScreen(result.id))
+                        },
+                        onSave = {
+                            scope.launchIO {
+                                if (isAnime) {
+                                    updateAnime.awaitUpdateFavorite(result.id, true)
+                                } else {
+                                    updateManga.awaitUpdateFavorite(result.id, true)
+                                }
+                            }
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WatchResultCard(
+    result: WatchSearchResult,
+    isAnime: Boolean,
+    onOpen: () -> Unit,
+    onSave: () -> Unit,
+) {
+    Card(
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+            ) {
+                AsyncImage(
+                    model = result.imageUrl,
+                    contentDescription = result.title,
+                    modifier = Modifier.size(width = 78.dp, height = 112.dp),
+                    contentScale = ContentScale.Crop,
+                )
+            }
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(
+                        text = result.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = result.sourceName,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Surface(
+                        onClick = onOpen,
+                        shape = RoundedCornerShape(999.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                    ) {
+                        Text(
+                            text = if (isAnime) "Open watch" else "Open read",
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                    }
+                    if (!result.isSaved) {
+                        Surface(
+                            onClick = onSave,
+                            shape = RoundedCornerShape(999.dp),
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                        ) {
+                            Text(
+                                text = "Save",
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                                style = MaterialTheme.typography.labelLarge,
+                            )
+                        }
+                    } else {
+                        Surface(
+                            shape = RoundedCornerShape(999.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        ) {
+                            Text(
+                                text = "Saved",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                                style = MaterialTheme.typography.labelLarge,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun rememberWatchSearchState(media: MediaDetailsQuery.Media): androidx.compose.runtime.State<WatchSearchState> {
+    return produceState<WatchSearchState>(initialValue = WatchSearchState.Loading, key1 = media.id) {
+        value = searchWatchState(media)
+    }
+}
+
+private suspend fun searchWatchState(media: MediaDetailsQuery.Media): WatchSearchState = coroutineScope {
+    val titles = media.searchTitles()
+    if (titles.isEmpty()) {
+        return@coroutineScope WatchSearchState.Empty
+    }
+
+    for (query in titles) {
+        val results = when (media.basicMediaDetails.type) {
+            MediaType.ANIME -> searchAnimeWatchResults(query)
+            MediaType.MANGA -> searchMangaWatchResults(query)
+            else -> emptyList()
+        }
+
+        if (results.isNotEmpty()) {
+            return@coroutineScope WatchSearchState.Ready(query = query, results = results)
+        }
+    }
+
+    WatchSearchState.Empty
+}
+
+private suspend fun searchAnimeWatchResults(query: String): List<WatchSearchResult> {
+    val sourcePreferences = Injekt.get<SourcePreferences>()
+    val sourceManager = Injekt.get<AnimeSourceManager>()
+    val networkToLocalAnime = Injekt.get<NetworkToLocalAnime>()
+
+    val enabledLanguages = sourcePreferences.enabledLanguages().get()
+    val disabledSources = sourcePreferences.disabledAnimeSources().get()
+    val pinnedSources = sourcePreferences.pinnedAnimeSources().get()
+
+    val sources = sourceManager.getCatalogueSources()
+        .filter { it.lang in enabledLanguages && "${it.id}" !in disabledSources }
+        .sortedWith(
+            compareBy(
+                { "${it.id}" !in pinnedSources },
+                { "${it.name.lowercase()} (${it.lang})" },
+            ),
+        )
+
+    return coroutineScope {
+        sources.map { source ->
+            async(Dispatchers.IO) {
+                runCatching {
+                    source.getSearchAnime(1, query, source.getFilterList())
+                        .animes
+                        .map { networkToLocalAnime.await(it.toDomainAnime(source.id)) }
+                        .map { anime ->
+                            WatchSearchResult(
+                                id = anime.id,
+                                title = anime.title,
+                                sourceName = source.name,
+                                imageUrl = anime.thumbnailUrl,
+                                isSaved = anime.favorite,
+                            )
+                        }
+                }.getOrDefault(emptyList())
+            }
+        }.awaitAll().flatten().distinctBy { it.id }
+    }
+}
+
+private suspend fun searchMangaWatchResults(query: String): List<WatchSearchResult> {
+    val sourcePreferences = Injekt.get<SourcePreferences>()
+    val sourceManager = Injekt.get<MangaSourceManager>()
+    val networkToLocalManga = Injekt.get<NetworkToLocalManga>()
+
+    val enabledLanguages = sourcePreferences.enabledLanguages().get()
+    val disabledSources = sourcePreferences.disabledMangaSources().get()
+    val pinnedSources = sourcePreferences.pinnedMangaSources().get()
+
+    val sources = sourceManager.getCatalogueSources()
+        .filter { it.lang in enabledLanguages && "${it.id}" !in disabledSources }
+        .sortedWith(
+            compareBy(
+                { "${it.id}" !in pinnedSources },
+                { "${it.name.lowercase()} (${it.lang})" },
+            ),
+        )
+
+    return coroutineScope {
+        sources.map { source ->
+            async(Dispatchers.IO) {
+                runCatching {
+                    source.getSearchManga(1, query, source.getFilterList())
+                        .mangas
+                        .map { networkToLocalManga.await(it.toDomainManga(source.id)) }
+                        .map { manga ->
+                            WatchSearchResult(
+                                id = manga.id,
+                                title = manga.title,
+                                sourceName = source.name,
+                                imageUrl = manga.thumbnailUrl,
+                                isSaved = manga.favorite,
+                            )
+                        }
+                }.getOrDefault(emptyList())
+            }
+        }.awaitAll().flatten().distinctBy { it.id }
+    }
+}
+
+private fun MediaDetailsQuery.Media.searchTitles(): List<String> {
+    return buildList {
+        title?.romaji?.trim()?.takeIf { it.isNotBlank() }?.let { add(it) }
+        title?.english?.trim()?.takeIf { it.isNotBlank() }?.let { add(it) }
+        title?.userPreferred?.trim()?.takeIf { it.isNotBlank() }?.let { add(it) }
+        title?.native?.trim()?.takeIf { it.isNotBlank() }?.let { add(it) }
+        synonyms.orEmpty()
+            .mapNotNull { it?.trim() }
+            .filter { it.isNotBlank() }
+            .forEach { add(it) }
+    }.distinct()
+}
+
+private val WatchSearchState.resultCount: Int
+    get() = when (this) {
+        WatchSearchState.Loading -> 0
+        WatchSearchState.Empty -> 0
+        is WatchSearchState.Ready -> results.size
+    }
+
+private val WatchSearchState.subtitle: String
+    get() = when (this) {
+        WatchSearchState.Loading -> "Queued searches will run automatically."
+        WatchSearchState.Empty -> "Search completed against installed sources."
+        is WatchSearchState.Ready -> "Searching stopped after the first matching title."
+    }
+
+private sealed interface WatchSearchState {
+    data object Loading : WatchSearchState
+
+    data object Empty : WatchSearchState
+
+    data class Ready(
+        val query: String,
+        val results: List<WatchSearchResult>,
+    ) : WatchSearchState
+}
+
+private data class WatchSearchResult(
+    val id: Long,
+    val title: String,
+    val sourceName: String,
+    val imageUrl: String?,
+    val isSaved: Boolean,
+)
 
 @Composable
 private fun MediaDetailsContent(
@@ -564,7 +1059,10 @@ private fun MediaDetailsContent(
         if (cast.isNotEmpty()) {
             item {
                 DetailSection(title = "Characters") {
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(end = 8.dp)) {
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = PaddingValues(end = 8.dp),
+                    ) {
                         items(cast, key = { it.mediaCharacter.node?.id ?: it.hashCode() }) { edge ->
                             val character = edge.mediaCharacter.node ?: return@items
                             PersonCard(
@@ -582,7 +1080,10 @@ private fun MediaDetailsContent(
         if (staff.isNotEmpty()) {
             item {
                 DetailSection(title = "Staff") {
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(end = 8.dp)) {
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = PaddingValues(end = 8.dp),
+                    ) {
                         items(staff, key = { it.mediaStaff.node?.id ?: it.hashCode() }) { edge ->
                             val member = edge.mediaStaff.node ?: return@items
                             PersonCard(
@@ -646,8 +1147,11 @@ private fun CharacterDetailsContent(
 
         item {
             DetailSection(title = "Media") {
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(end = 8.dp)) {
-                        items(relatedMedia, key = { it.id ?: it.node?.id ?: it.hashCode() }) { edge ->
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(end = 8.dp),
+                ) {
+                    items(relatedMedia, key = { it.id ?: it.node?.id ?: it.hashCode() }) { edge ->
                         val media = edge.node ?: return@items
                         MediaCard(
                             title = media.basicMediaDetails.title?.userPreferred ?: "Untitled",
@@ -686,7 +1190,13 @@ private fun StaffDetailsContent(
         item {
             DetailHero(
                 title = staff.nameLabel(),
-                subtitle = listOfNotNull(staff.gender, staff.homeTown, staff.age?.let { "$it years" }).joinToString(" · "),
+                subtitle = listOfNotNull(
+                    staff.gender,
+                    staff.homeTown,
+                    staff.age?.let {
+                        "$it years"
+                    },
+                ).joinToString(" · "),
                 imageUrl = staff.image?.large,
                 coverUrl = staff.image?.large,
                 chips = listOfNotNull(
@@ -717,8 +1227,11 @@ private fun StaffDetailsContent(
 
         item {
             DetailSection(title = "Media") {
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(end = 8.dp)) {
-                        items(relatedMedia, key = { it.id ?: it.node?.id ?: it.hashCode() }) { edge ->
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(end = 8.dp),
+                ) {
+                    items(relatedMedia, key = { it.id ?: it.node?.id ?: it.hashCode() }) { edge ->
                         val media = edge.node ?: return@items
                         MediaCard(
                             title = media.basicMediaDetails.title?.userPreferred ?: "Untitled",
@@ -769,7 +1282,10 @@ private fun StudioDetailsContent(
 
         item {
             DetailSection(title = "Produced Media") {
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(end = 8.dp)) {
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(end = 8.dp),
+                ) {
                     items(media, key = { it.id }) { node ->
                         MediaCard(
                             title = node.title?.userPreferred ?: "Untitled",
@@ -809,11 +1325,31 @@ private fun FavoritesContent(
             )
         }
 
-        item { FavoritesSection(title = "Anime", count = anime.size) { FavoriteMediaRow(anime) { navigator.push(AnilistMediaDetailsScreen(it.id)) } } }
-        item { FavoritesSection(title = "Manga", count = manga.size) { FavoriteMediaRow(manga) { navigator.push(AnilistMediaDetailsScreen(it.id)) } } }
-        item { FavoritesSection(title = "Characters", count = characters.size) { FavoritePersonRow(characters) { navigator.push(AnilistCharacterDetailsScreen(it.id)) } } }
-        item { FavoritesSection(title = "Staff", count = staff.size) { FavoritePersonRow(staff) { navigator.push(AnilistStaffDetailsScreen(it.id)) } } }
-        item { FavoritesSection(title = "Studios", count = studios.size) { FavoriteStudioRow(studios) { navigator.push(AnilistStudioDetailsScreen(it.id)) } } }
+        item {
+            FavoritesSection(title = "Anime", count = anime.size) {
+                FavoriteMediaRow(anime) { navigator.push(AnilistMediaDetailsScreen(it.id)) }
+            }
+        }
+        item {
+            FavoritesSection(title = "Manga", count = manga.size) {
+                FavoriteMediaRow(manga) { navigator.push(AnilistMediaDetailsScreen(it.id)) }
+            }
+        }
+        item {
+            FavoritesSection(title = "Characters", count = characters.size) {
+                FavoritePersonRow(characters) { navigator.push(AnilistCharacterDetailsScreen(it.id)) }
+            }
+        }
+        item {
+            FavoritesSection(title = "Staff", count = staff.size) {
+                FavoritePersonRow(staff) { navigator.push(AnilistStaffDetailsScreen(it.id)) }
+            }
+        }
+        item {
+            FavoritesSection(title = "Studios", count = studios.size) {
+                FavoriteStudioRow(studios) { navigator.push(AnilistStudioDetailsScreen(it.id)) }
+            }
+        }
 
         item {
             Spacer(modifier = Modifier.height(8.dp))
@@ -841,7 +1377,11 @@ private fun FavoritesSection(
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
             Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-            Text("$count", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                "$count",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
         content()
     }
@@ -854,14 +1394,22 @@ private fun FavoriteMediaRow(
 ) {
     val mediaItems = entries.mapNotNull { item ->
         when (item) {
-            is UserFavoritesAnimeQuery.Node -> FavoriteMediaEntry(item.id, item.title?.userPreferred ?: "Untitled", item.coverImage?.large)
-            is UserFavoritesMangaQuery.Node -> FavoriteMediaEntry(item.id, item.title?.userPreferred ?: "Untitled", item.coverImage?.large)
+            is UserFavoritesAnimeQuery.Node -> FavoriteMediaEntry(
+                item.id,
+                item.title?.userPreferred ?: "Untitled",
+                item.coverImage?.large,
+            )
+            is UserFavoritesMangaQuery.Node -> FavoriteMediaEntry(
+                item.id,
+                item.title?.userPreferred ?: "Untitled",
+                item.coverImage?.large,
+            )
             else -> null
         }
     }
 
     LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(end = 8.dp)) {
-                        items(mediaItems, key = { it.id }) { entry ->
+        items(mediaItems, key = { it.id }) { entry ->
             MediaCard(title = entry.title, subtitle = null, imageUrl = entry.imageUrl, onClick = { onClick(entry) })
         }
     }
@@ -874,14 +1422,22 @@ private fun FavoritePersonRow(
 ) {
     val people = entries.mapNotNull { item ->
         when (item) {
-            is UserFavoritesCharacterQuery.Node -> FavoritePersonEntry(item.id, item.name?.userPreferred ?: "Untitled", item.image?.large)
-            is UserFavoritesStaffQuery.Node -> FavoritePersonEntry(item.id, item.name?.userPreferred ?: "Untitled", item.image?.large)
+            is UserFavoritesCharacterQuery.Node -> FavoritePersonEntry(
+                item.id,
+                item.name?.userPreferred ?: "Untitled",
+                item.image?.large,
+            )
+            is UserFavoritesStaffQuery.Node -> FavoritePersonEntry(
+                item.id,
+                item.name?.userPreferred ?: "Untitled",
+                item.image?.large,
+            )
             else -> null
         }
     }
 
     LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(end = 8.dp)) {
-                        items(people, key = { it.id }) { entry ->
+        items(people, key = { it.id }) { entry ->
             PersonCard(title = entry.title, subtitle = null, imageUrl = entry.imageUrl, onClick = { onClick(entry) })
         }
     }
@@ -937,7 +1493,10 @@ private fun DetailHero(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.Bottom,
             ) {
-                Card(shape = RoundedCornerShape(20.dp), elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)) {
+                Card(
+                    shape = RoundedCornerShape(20.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                ) {
                     AsyncImage(
                         model = coverUrl,
                         contentDescription = title,
@@ -948,8 +1507,18 @@ private fun DetailHero(
                     )
                 }
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(title, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, maxLines = 2)
-                    Text(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium, maxLines = 2)
+                    Text(
+                        title,
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 2,
+                    )
+                    Text(
+                        subtitle,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 2,
+                    )
                     FlowChips(items = chips)
                     Surface(
                         onClick = onRetry,
@@ -1019,7 +1588,10 @@ private fun MediaCard(
             .clickable(onClick = onClick),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Card(shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
+        Card(
+            shape = RoundedCornerShape(18.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        ) {
             AsyncImage(
                 model = imageUrl,
                 contentDescription = title,
@@ -1029,9 +1601,21 @@ private fun MediaCard(
                 contentScale = ContentScale.Crop,
             )
         }
-        Text(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(
+            title,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
         subtitle?.takeIf { it.isNotBlank() }?.let {
-            Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                it,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }
@@ -1049,7 +1633,10 @@ private fun PersonCard(
             .clickable(onClick = onClick),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Card(shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
+        Card(
+            shape = RoundedCornerShape(18.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        ) {
             AsyncImage(
                 model = imageUrl,
                 contentDescription = title,
@@ -1059,9 +1646,21 @@ private fun PersonCard(
                 contentScale = ContentScale.Crop,
             )
         }
-        Text(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(
+            title,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
         subtitle?.takeIf { it.isNotBlank() }?.let {
-            Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                it,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }
@@ -1118,7 +1717,9 @@ private fun CharacterDetailsQuery.Character.nameLabel(): String {
     return name?.userPreferred ?: name?.native ?: "Untitled"
 }
 
-private fun CharacterDetailsQuery.Character.descriptionText(): String = trimHtml(description ?: "No description available.")
+private fun CharacterDetailsQuery.Character.descriptionText(): String = trimHtml(
+    description ?: "No description available.",
+)
 
 private fun StaffDetailsQuery.Staff.nameLabel(): String {
     return name?.userPreferred ?: name?.native ?: "Untitled"

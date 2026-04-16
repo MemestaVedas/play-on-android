@@ -25,9 +25,9 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import eu.kanade.domain.anilist.model.AnilistSimpleMedia
 import eu.kanade.presentation.anilist.details.AnilistMediaDetailsScreen
 import eu.kanade.presentation.util.Screen
-import eu.kanade.domain.anilist.model.AnilistSimpleMedia
 
 object AnilistExploreScreen : Screen() {
 

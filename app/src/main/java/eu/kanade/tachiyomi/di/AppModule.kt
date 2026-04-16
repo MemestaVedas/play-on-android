@@ -5,10 +5,10 @@ import android.os.Build
 import androidx.core.content.ContextCompat
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
+import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.cache.normalized.normalizedCache
 import com.apollographql.apollo.cache.normalized.sql.SqlNormalizedCacheFactory
-import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import data.History
 import data.Mangas
 import dataanime.Animehistory
