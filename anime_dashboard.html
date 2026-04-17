@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Editorial Expressive - Neon Nocturne</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Manrope:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "secondary-dim": "#beb5ce",
+                      "surface-dim": "#0f0d13",
+                      "tertiary-container": "#fec5d6",
+                      "primary-fixed": "#d0bcff",
+                      "error-container": "#8a1632",
+                      "inverse-on-surface": "#57545b",
+                      "surface-container-low": "#151219",
+                      "on-tertiary": "#6f4653",
+                      "surface-variant": "#28242f",
+                      "inverse-surface": "#fef7ff",
+                      "on-surface": "#eae2f2",
+                      "on-surface-variant": "#afa8b7",
+                      "on-error": "#490013",
+                      "error": "#fd6f85",
+                      "tertiary-fixed": "#fec5d6",
+                      "secondary-fixed-dim": "#ddd3ed",
+                      "surface-container-highest": "#28242f",
+                      "surface-container-high": "#211e28",
+                      "surface-container": "#1b1821",
+                      "inverse-primary": "#665590",
+                      "tertiary": "#ffd9e3",
+                      "background": "#0f0d13",
+                      "secondary-container": "#292336",
+                      "on-tertiary-fixed": "#502b38",
+                      "surface-bright": "#2e2a37",
+                      "primary-fixed-dim": "#c2aff1",
+                      "surface-container-lowest": "#000000",
+                      "on-tertiary-fixed-variant": "#704654",
+                      "on-secondary-fixed-variant": "#615a70",
+                      "secondary-fixed": "#ece1fc",
+                      "surface-tint": "#ddcdff",
+                      "tertiary-dim": "#efb8c8",
+                      "on-secondary": "#433d52",
+                      "on-primary-fixed-variant": "#503f79",
+                      "on-tertiary-container": "#663d4b",
+                      "outline-variant": "#4a4652",
+                      "outline": "#797381",
+                      "error-dim": "#c8475d",
+                      "on-primary": "#503f79",
+                      "on-secondary-fixed": "#443e53",
+                      "primary-container": "#d0bcff",
+                      "on-error-container": "#ff97a3",
+                      "secondary": "#ccc2dc",
+                      "on-background": "#eae2f2",
+                      "primary": "#ddcdff",
+                      "tertiary-fixed-dim": "#efb8c8",
+                      "surface": "#0f0d13",
+                      "primary-dim": "#c2aff1",
+                      "on-primary-container": "#47366f"
+              },
+              "borderRadius": {
+                      "DEFAULT": "1rem",
+                      "lg": "2rem",
+                      "xl": "3rem",
+                      "full": "9999px"
+              },
+              "fontFamily": {
+                      "headline": ["Space Grotesk"],
+                      "body": ["Manrope"],
+                      "label": ["Space Grotesk"]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        body { min-height: max(884px, 100dvh); }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<header class="bg-background/80 backdrop-blur-xl text-[#D0BCFF] font-['Space_Grotesk'] font-bold tracking-tight fixed top-0 w-full z-50 flex justify-between items-center px-6 py-4 border-b border-white/5">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#D0BCFF] text-2xl hover:opacity-80 transition-opacity active:scale-95 active:duration-150 cursor-pointer">menu</span>
+<h1 class="text-2xl font-bold tracking-tighter text-[#E6E1E5]">Editorial Expressive</h1>
+</div>
+<div class="flex items-center gap-6">
+<span class="material-symbols-outlined text-[#D0BCFF] text-2xl hover:opacity-80 transition-opacity active:scale-95 active:duration-150 cursor-pointer">notifications</span>
+</div>
+</header>
+<main class="pt-20 pb-40">
+<!-- 1. Currently Watching (High-Quality Poster Style) -->
+<section class="px-6 md:px-12">
+<div class="flex justify-between items-end mb-6">
+<h3 class="font-headline text-2xl font-semibold text-on-surface tracking-tight">Currently Watching</h3>
+<span class="text-primary font-medium text-sm cursor-pointer hover:underline">View All</span>
+</div>
+<div class="flex gap-6 overflow-x-auto hide-scrollbar pb-4">
+<!-- 6 Cards -->
+<div class="flex-shrink-0 w-[220px]">
+<div class="relative aspect-[3/4] rounded-2xl overflow-hidden bg-surface-container-low group">
+<img alt="Anime" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD4E1NnrUx0BhnkaT6uwdXo20P8gRDQ8DZwOav7cYcMpjn61DEH36qVPjA39BGACM7kMCm55KtEH01ruEb-E1gB0fC31srLaCSXjV6abAU2aFDB_qae31xtsEgW78Jaqxwyd4IFnen868dxiRbDkwpCo9rEYrL9D3HXhUbazuHoPrbddapvHz897doc-pWIt4LZSVscKVqT-n3tA6hTnarbAG6ygAyp4mEeYuNDT54nstZ6zMYDr8Je78VC8NNVURS2dJqivxkfRriN"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#47366f] via-[#47366f]/40 to-transparent pt-[40%]"></div>
+<div class="absolute bottom-0 left-0 w-full p-4">
+<h4 class="text-white font-bold text-lg leading-tight line-clamp-2">Shadow Protocol</h4>
+<p class="text-white/80 text-xs font-medium mt-1 uppercase tracking-wider">Episode 12 • 5m left</p>
+</div>
+</div>
+</div>
+<div class="flex-shrink-0 w-[220px]">
+<div class="relative aspect-[3/4] rounded-2xl overflow-hidden bg-surface-container-low group">
+<img alt="Anime" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDc7-E0vhA09Hx0wJlORc4y1TahD1fSk1UBDRhAvv29K4LkRsEP-TAPw9cBToh_1SdEFy-PmIp_kqPdVEOndBbxizgXLY0U6zY_sEsdDAXlc15epbSo5XQThKMup9cjZXkwlKiYZvgGi9ouNhWMP778pHnCbVT5O7CLZPpUAWm3bo2PolPV0garURUDDNNZbnuFDjxzPEvmriUrIMqvHwlGKOptZOQiC5LcNZjHT0E1lqdDdMgbllB777RcGkpPuQ-T004LS0YhccrF"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#292336] via-[#292336]/40 to-transparent pt-[40%]"></div>
+<div class="absolute bottom-0 left-0 w-full p-4">
+<h4 class="text-white font-bold text-lg leading-tight line-clamp-2">Aether Drift</h4>
+<p class="text-white/80 text-xs font-medium mt-1 uppercase tracking-wider">Episode 03 • 18m left</p>
+</div>
+</div>
+</div>
+<div class="flex-shrink-0 w-[220px]">
+<div class="relative aspect-[3/4] rounded-2xl overflow-hidden bg-surface-container-low group">
+<img alt="Anime" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBwk0J1DBQDCUe845dckMQwYQoeLDEbGMocAmZNqyjOO8CsuIDQuL39MemPK1R3RAG6HhazzHJ-JreMjnhJver0dT9MbAR_GluF0MpJWdt0O0vjgqdK4dvBJqrX3xrv7RQS6AilOLvUqu3L5-TOfZs3Drumek8A8L8btLma3rz93HtS-wcFRPUKqyDlKM8dmgSf4GVzBCvHYUhF6B_5iGejowgYYDLbJIc2TXcZmnsAOWKCXU5fPwIUx4xFQi4wkhUa5trnmsl9rRqP"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#6f4653] via-[#6f4653]/40 to-transparent pt-[40%]"></div>
+<div class="absolute bottom-0 left-0 w-full p-4">
+<h4 class="text-white font-bold text-lg leading-tight line-clamp-2">Spirit Bound</h4>
+<p class="text-white/80 text-xs font-medium mt-1 uppercase tracking-wider">Episode 24 • 2m left</p>
+</div>
+</div>
+</div>
+<div class="flex-shrink-0 w-[220px]">
+<div class="relative aspect-[3/4] rounded-2xl overflow-hidden bg-surface-container-low group">
+<img alt="Anime" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDCEdvKq5VppsK365aTTKOLieU-qtj9hHxAPKNNLjsq1uz0W2Pv4nG4L0COmjOVdJHzMpiELAAIRmKgtaWFsFv9YAbbMNWTMf25LVQ8hPiBUnq4aisQcl0IJFh6m5xSWQ3exZZhqBbkcjSf7vx-Qe0YVGQAPa4jGO8lfDhGzU51XsIKjDWVuEMbGy20_pHiNRHqZAVl7zPWtijICF-awcPiFNaOYVfURHOg69ML9efErjapLM6t6Sc1So9kY7zi_XxZpkQHaUE0M3rx"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#21005D] via-[#21005D]/40 to-transparent pt-[40%]"></div>
+<div class="absolute bottom-0 left-0 w-full p-4">
+<h4 class="text-white font-bold text-lg leading-tight line-clamp-2">Neon Genesis</h4>
+<p class="text-white/80 text-xs font-medium mt-1 uppercase tracking-wider">Episode 04 • 22m left</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 2. Currently Reading (High-Quality Poster Style) -->
+<section class="mt-12 px-6 md:px-12">
+<h3 class="font-headline text-2xl font-semibold text-on-surface tracking-tight mb-6">Currently Reading</h3>
+<div class="flex gap-6 overflow-x-auto hide-scrollbar pb-4">
+<div class="flex-shrink-0 w-[180px]">
+<div class="relative aspect-[2/3] rounded-2xl overflow-hidden bg-surface-container-low group shadow-xl">
+<img alt="Manga" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD5RpN191NGRktLwHVHakQBdwJ3x6tHH-Kzpp1CRFIuLj7XaU6p5ARo3EAjJ0M9yYVJ1yR8nLhD1bHvL1IXT7yEH37nx2JHGlw80R9o3LBZLLOtCF1PMiBHIautfcpQ0yafYS_vkWUaxjpcJGRotxyC_gsiEev4tW-AP6MX7FROxHJpRU0142VnlcclLFDF1KJGaAshfsFbbDjBk3MLbSI14niVXdTV3vFRDG22RiYeNCStdaVz5VqK3yDKngq_SjjEBcAp37FDlKI1"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#322159] via-[#322159]/30 to-transparent pt-[50%]"></div>
+<div class="absolute bottom-0 left-0 w-full p-4">
+<h4 class="text-white font-bold text-base leading-tight">Blade of Zenith</h4>
+<p class="text-white/80 text-[10px] font-bold mt-1 uppercase tracking-widest">Chapter 142</p>
+</div>
+</div>
+</div>
+<div class="flex-shrink-0 w-[180px]">
+<div class="relative aspect-[2/3] rounded-2xl overflow-hidden bg-surface-container-low group shadow-xl">
+<img alt="Manga" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB0muEG9PyCPZrHVSPfZWaK70BPzFYv4V71DtB7iWxcCW1pc7caAZT5LQ23ubXAyOM_ST9k4PpLoDeXoJu6D_p1HCb42X0R84YZ1PLBSVRgMPodhgcvDNJ6acyOKksZ63N0cqrHGaxPiclGgqXU06kbeJd5lsaI4zzVCkkw8HErDsyI_f6pChl-2PclW_U9aTt86dz1ar1hGvdLMCWGlUYuPbUXQPu6sxoF3TpwCIooou6XoF2Csahm89WeEglUTKeofKme2odEU8aR"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#000000] via-[#000000]/30 to-transparent pt-[50%]"></div>
+<div class="absolute bottom-0 left-0 w-full p-4">
+<h4 class="text-white font-bold text-base leading-tight">Neo Tokyo Noir</h4>
+<p class="text-white/80 text-[10px] font-bold mt-1 uppercase tracking-widest">Chapter 89</p>
+</div>
+</div>
+</div>
+<div class="flex-shrink-0 w-[180px]">
+<div class="relative aspect-[2/3] rounded-2xl overflow-hidden bg-surface-container-low group shadow-xl">
+<img alt="Manga" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA2CJntosbwc4M6WlObyf1uHAb5FSJyvwjezJkEtV5sA8Y0wQ1fS9_kG3hBGWa7HBNihA_hBAvaEnTDSPGy-7d_tZIxDvPBeOuqyMSBM_nUER9lzguhIU7bzLXgARRKJaKbJgelNki8f6b5tRAm4PggtT4TPUbOw2uB_M7_rIV2cs0pELZ4pYZZCryFD0m2jKZUwl4pueoYpFEJhFAfN-lol4Y5YT_hxMvL1t7r-QUf5F9s4YQOG8eyBsp1dilJm8bxKrax1UfEwnZo"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#503f79] via-[#503f79]/30 to-transparent pt-[50%]"></div>
+<div class="absolute bottom-0 left-0 w-full p-4">
+<h4 class="text-white font-bold text-base leading-tight">Silent Echo</h4>
+<p class="text-white/80 text-[10px] font-bold mt-1 uppercase tracking-widest">Chapter 12</p>
+</div>
+</div>
+</div>
+<div class="flex-shrink-0 w-[180px]">
+<div class="relative aspect-[2/3] rounded-2xl overflow-hidden bg-surface-container-low group shadow-xl">
+<img alt="Manga" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBNnDmFIzERiPzIedV94mA8Z3V63gTfUTzZ08S-X_fKmcIgc_U7mj1I7cO1XtZ0aiyQSQcJ90WED-moJHJVHJVgPIVUnXT3n1GryedRF8SjBrvsboabwxj-idVJjoPSliRjG4Fmp3uJIFje5JS9lkUgNPdRpzGnmEcmeZUefqXTge-pbQGO_zr5O37VpR_itFxLyf9meF0LgjjfFAdoeAf3sbXyuY-_QrnDgjB4TJ-ad9E8GoIUuOr2L7AuRsk8Kc6jf2Y-EEjjr1SB"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#433d52] via-[#433d52]/30 to-transparent pt-[50%]"></div>
+<div class="absolute bottom-0 left-0 w-full p-4">
+<h4 class="text-white font-bold text-base leading-tight">Grimoire Heart</h4>
+<p class="text-white/80 text-[10px] font-bold mt-1 uppercase tracking-widest">Chapter 56</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 3. Upcoming Episodes Weekly Calendar -->
+<section class="mt-16 px-6 md:px-12">
+<div class="flex flex-col gap-6">
+<div class="flex justify-between items-center">
+<h3 class="font-headline text-2xl font-semibold text-on-surface tracking-tight">Upcoming Episodes</h3>
+<div class="flex gap-2">
+<button class="p-2 rounded-full bg-surface-container hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-sm">chevron_left</span>
+</button>
+<button class="p-2 rounded-full bg-surface-container hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-12 gap-8">
+<!-- Days list -->
+<div class="md:col-span-4 flex md:flex-col gap-2 overflow-x-auto hide-scrollbar">
+<div class="flex-shrink-0 flex items-center justify-between p-4 rounded-xl bg-primary text-on-primary md:w-full min-w-[120px]">
+<span class="font-bold">Monday</span>
+<span class="text-xs opacity-80">May 15</span>
+</div>
+<div class="flex-shrink-0 flex items-center justify-between p-4 rounded-xl bg-surface-container-low md:w-full min-w-[120px] hover:bg-surface-container transition-colors cursor-pointer">
+<span class="font-bold">Tuesday</span>
+<span class="text-xs text-on-surface-variant">May 16</span>
+</div>
+<div class="flex-shrink-0 flex items-center justify-between p-4 rounded-xl bg-surface-container-low md:w-full min-w-[120px] hover:bg-surface-container transition-colors cursor-pointer">
+<span class="font-bold">Wednesday</span>
+<span class="text-xs text-on-surface-variant">May 17</span>
+</div>
+<div class="flex-shrink-0 flex items-center justify-between p-4 rounded-xl bg-surface-container-low md:w-full min-w-[120px] hover:bg-surface-container transition-colors cursor-pointer">
+<span class="font-bold">Thursday</span>
+<span class="text-xs text-on-surface-variant">May 18</span>
+</div>
+</div>
+<!-- Episodes for selected day -->
+<div class="md:col-span-8 flex flex-col gap-4">
+<div class="flex items-center gap-4 p-4 rounded-2xl bg-surface-container-high border border-white/5">
+<div class="text-primary font-bold w-16 text-center">18:30</div>
+<div class="flex-1">
+<h4 class="font-bold">Vanguard Saga</h4>
+<p class="text-sm text-on-surface-variant">Season 2 • Episode 09</p>
+</div>
+<button class="bg-primary-container text-on-primary-container p-2 rounded-full">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</div>
+<div class="flex items-center gap-4 p-4 rounded-2xl bg-surface-container-high border border-white/5">
+<div class="text-primary font-bold w-16 text-center">21:00</div>
+<div class="flex-1">
+<h4 class="font-bold">Iron Soul</h4>
+<p class="text-sm text-on-surface-variant">Season 1 • Episode 16</p>
+</div>
+<button class="bg-surface-container text-primary p-2 rounded-full">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">notifications_active</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 4. Statistics Dashboard -->
+<section class="mt-16 px-6 md:px-12">
+<h3 class="font-headline text-2xl font-semibold text-on-surface tracking-tight mb-8">Personal Statistics</h3>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Watch Time -->
+<div class="p-8 rounded-3xl bg-gradient-to-br from-[#4F378B] to-[#21005D] text-white flex flex-col justify-between h-[220px]">
+<div>
+<p class="text-sm opacity-80 uppercase font-bold tracking-widest">Total Watch Time</p>
+<h4 class="text-5xl font-headline font-bold mt-2">12d <span class="text-2xl font-normal opacity-60">08h</span></h4>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-fixed">trending_up</span>
+<span class="text-sm font-medium">+14% from last month</span>
+</div>
+</div>
+<!-- Reading Progress -->
+<div class="p-8 rounded-3xl bg-surface-container-high border border-white/5 flex flex-col justify-between h-[220px]">
+<div>
+<p class="text-sm text-on-surface-variant uppercase font-bold tracking-widest">Volumes Read</p>
+<h4 class="text-5xl font-headline font-bold mt-2 text-primary">342</h4>
+</div>
+<div class="w-full bg-surface-container rounded-full h-4 overflow-hidden">
+<div class="bg-tertiary h-full w-[65%] rounded-full"></div>
+</div>
+</div>
+<!-- Genre Breakdown Chart -->
+<div class="p-8 rounded-3xl bg-surface-container-high border border-white/5 h-[220px] relative overflow-hidden">
+<p class="text-sm text-on-surface-variant uppercase font-bold tracking-widest mb-4">Genre Breakdown</p>
+<div class="flex items-end gap-3 h-24">
+<div class="flex-1 bg-primary rounded-t-lg" style="height: 85%;"></div>
+<div class="flex-1 bg-secondary rounded-t-lg" style="height: 45%;"></div>
+<div class="flex-1 bg-tertiary rounded-t-lg" style="height: 65%;"></div>
+<div class="flex-1 bg-primary-container rounded-t-lg" style="height: 25%;"></div>
+<div class="flex-1 bg-error rounded-t-lg" style="height: 55%;"></div>
+</div>
+<div class="flex justify-between mt-4 text-[10px] font-bold text-on-surface-variant uppercase tracking-tighter">
+<span>Action</span>
+<span>Slice</span>
+<span>Sci-Fi</span>
+<span>Dark</span>
+<span>Fantasy</span>
+</div>
+</div>
+</div>
+</section>
+<!-- 5. Community Feed -->
+<section class="mt-16 px-6 md:px-12 max-w-4xl mx-auto">
+<div class="flex justify-between items-center mb-8">
+<h3 class="font-headline text-2xl font-semibold text-on-surface tracking-tight">Community Feed</h3>
+<div class="flex gap-4">
+<span class="text-primary font-bold text-sm cursor-pointer pb-1 border-b-2 border-primary">Recent</span>
+<span class="text-on-surface-variant font-bold text-sm cursor-pointer">Global</span>
+</div>
+</div>
+<div class="flex flex-col gap-6">
+<!-- Activity Entry 1 -->
+<div class="p-6 rounded-2xl bg-surface-container-low border border-white/5 flex gap-4">
+<img alt="User Avatar" class="w-12 h-12 rounded-full flex-shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDt6Y8U02Zc4NQUc4AL9pI6TCcj3ArJUfhaFWdjPCIbVc2w59AK4F8CghV3VTx1_d02E_nlc1Ia6X_AtaW5UxRJIrWHdDDpeW3uraYar2PUKSO44gmpS36-yG8O3ArQOCRr4H7SMIVo380y8KHZ-CPHp-48zkrBCz03hJO8oGyhmF1vAWxhkzksQRqKEs4cBo0beQ1Ci5cfvLYvMlbevoAhtQZESeqIQ6heRUWms_yWPjXrxv4xobnHBYuBpnHlWBXNzSoPVHM2_ooN"/>
+<div class="flex-1">
+<div class="flex flex-wrap items-center gap-x-2 text-sm">
+<span class="font-bold text-primary">Yuki_Sora</span>
+<span class="text-on-surface-variant">watched episode 12 of</span>
+<span class="font-bold">Shadow Protocol</span>
+</div>
+<p class="text-xs text-on-surface-variant mt-1">2 hours ago</p>
+<div class="mt-4 flex gap-4 items-center">
+<img alt="Thumbnail" class="w-16 h-20 rounded-lg object-cover shadow-md" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD4E1NnrUx0BhnkaT6uwdXo20P8gRDQ8DZwOav7cYcMpjn61DEH36qVPjA39BGACM7kMCm55KtEH01ruEb-E1gB0fC31srLaCSXjV6abAU2aFDB_qae31xtsEgW78Jaqxwyd4IFnen868dxiRbDkwpCo9rEYrL9D3HXhUbazuHoPrbddapvHz897doc-pWIt4LZSVscKVqT-n3tA6hTnarbAG6ygAyp4mEeYuNDT54nstZ6zMYDr8Je78VC8NNVURS2dJqivxkfRriN"/>
+<div class="flex flex-col justify-center">
+<p class="text-sm italic text-on-surface-variant">"That cliffhanger was insane!"</p>
+</div>
+</div>
+<div class="mt-6 flex gap-6 text-on-surface-variant">
+<div class="flex items-center gap-2 hover:text-primary cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-lg">favorite</span>
+<span class="text-xs font-bold">24</span>
+</div>
+<div class="flex items-center gap-2 hover:text-primary cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-lg">chat_bubble</span>
+<span class="text-xs font-bold">8</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md z-50 flex justify-around items-center px-4 py-3 bg-surface-container/80 backdrop-blur-xl rounded-full shadow-2xl border border-white/5 h-[72px]">
+<div class="flex flex-col items-center justify-center bg-[#4F378B] text-[#D0BCFF] rounded-full px-5 py-1 transition-all scale-110 active:duration-200 cursor-pointer">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-['Manrope'] text-[12px] font-medium">Home</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#CAC4D0] opacity-70 hover:text-[#D0BCFF] transition-all cursor-pointer">
+<span class="material-symbols-outlined">subscriptions</span>
+<span class="font-['Manrope'] text-[12px] font-medium">Library</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#CAC4D0] opacity-70 hover:text-[#D0BCFF] transition-all cursor-pointer">
+<span class="material-symbols-outlined">search</span>
+<span class="font-['Manrope'] text-[12px] font-medium">Search</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#CAC4D0] opacity-70 hover:text-[#D0BCFF] transition-all cursor-pointer">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-['Manrope'] text-[12px] font-medium">Settings</span>
+</div>
+</nav>
+</body></html>
