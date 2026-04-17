@@ -3,16 +3,26 @@ package eu.kanade.tachiyomi.ui.home
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -25,10 +35,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -79,6 +94,7 @@ object HomeScreen : Screen() {
     private val defaultTab = uiPreferences.startScreen().get().tab
     private val moreTab = uiPreferences.navStyle().get().moreTab
 
+    @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
     @Composable
     override fun Content() {
         val navStyle by uiPreferences.navStyle().collectAsState()
@@ -99,31 +115,29 @@ object HomeScreen : Screen() {
                             }
                         }
                     },
-                    bottomBar = {
-                        if (!isTabletUi()) {
-                            val bottomNavVisible by produceState(initialValue = true) {
-                                showBottomNavEvent.receiveAsFlow().collectLatest { value = it }
-                            }
-                            AnimatedVisibility(
-                                visible = bottomNavVisible && tabNavigator.current != navStyle.moreTab,
-                                enter = expandVertically(),
-                                exit = shrinkVertically(),
-                            ) {
-                                NavigationBar {
-                                    navStyle.tabs.fastForEach {
-                                        NavigationBarItem(it)
-                                    }
-                                }
-                            }
-                        }
-                    },
                     contentWindowInsets = WindowInsets(0),
                 ) { contentPadding ->
+                    // Floating nav bar state
+                    val bottomNavVisible by produceState(initialValue = true) {
+                        showBottomNavEvent.receiveAsFlow().collectLatest { value = it }
+                    }
+                    val isNavVisible = !isTabletUi() &&
+                        bottomNavVisible &&
+                        tabNavigator.current != navStyle.moreTab
+
+                    // Bottom inset from gesture/nav bar
+                    val navBarInset = WindowInsets.navigationBars
+                        .only(WindowInsetsSides.Bottom)
+                        .asPaddingValues()
+                        .calculateBottomPadding()
+
                     Box(
                         modifier = Modifier
                             .padding(contentPadding)
-                            .consumeWindowInsets(contentPadding),
+                            .consumeWindowInsets(contentPadding)
+                            .fillMaxSize(),
                     ) {
+                        // Tab content — fills full screen (nav bar overlays it)
                         AnimatedContent(
                             targetState = tabNavigator.current,
                             transitionSpec = {
@@ -137,6 +151,46 @@ object HomeScreen : Screen() {
                         ) {
                             tabNavigator.saveableState(key = "currentTab", it) {
                                 it.Content()
+                            }
+                        }
+
+                        // Floating Navigation Bar — overlaid at bottom
+                        AnimatedVisibility(
+                            visible = isNavVisible,
+                            enter = slideInVertically(
+                                animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+                                initialOffsetY = { it },
+                            ) + fadeIn(
+                                animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+                            ),
+                            exit = slideOutVertically(
+                                animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+                                targetOffsetY = { it },
+                            ) + fadeOut(
+                                animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+                            ),
+                            modifier = Modifier.align(Alignment.BottomCenter),
+                        ) {
+                            NavigationBar(
+                                modifier = Modifier
+                                    .padding(
+                                        start = 24.dp,
+                                        end = 24.dp,
+                                        bottom = navBarInset + 12.dp,
+                                    )
+                                    .shadow(
+                                        elevation = 8.dp,
+                                        shape = RoundedCornerShape(40.dp),
+                                        ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                        spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
+                                    )
+                                    .clip(RoundedCornerShape(40.dp)),
+                                containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.97f),
+                                windowInsets = WindowInsets(0),
+                            ) {
+                                navStyle.tabs.fastForEach {
+                                    NavigationBarItem(it)
+                                }
                             }
                         }
                     }
@@ -184,6 +238,7 @@ object HomeScreen : Screen() {
                                 }
                                 BrowseTab
                             }
+                            is Tab.Home -> AniListTab
                             is Tab.More -> MoreTab
                         }
 
@@ -340,5 +395,6 @@ object HomeScreen : Screen() {
         data object History : Tab
         data class Browse(val toExtensions: Boolean = false, val anime: Boolean = false) : Tab
         data class More(val toDownloads: Boolean) : Tab
+        data object Home : Tab
     }
 }
