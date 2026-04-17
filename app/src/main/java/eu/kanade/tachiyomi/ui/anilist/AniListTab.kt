@@ -3,9 +3,13 @@ package eu.kanade.tachiyomi.ui.anilist
 import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -14,7 +18,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -34,10 +37,12 @@ data object AniListTab : Tab {
     override val options: TabOptions
         @Composable
         get() {
+            val title = stringResource(MR.strings.label_home)
+            val icon = rememberAniListTabPainter()
             return TabOptions(
-                index = 2u,
-                title = "AniList",
-                icon = rememberAniListTabPainter(),
+                index = 0u,
+                title = title,
+                icon = icon,
             )
         }
 
@@ -45,6 +50,7 @@ data object AniListTab : Tab {
         navigator.push(UpdatesTab)
     }
 
+    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
         val context = androidx.compose.ui.platform.LocalContext.current
@@ -53,11 +59,16 @@ data object AniListTab : Tab {
         Scaffold(
             topBar = {
                 CenterAlignedTopAppBar(
-                    title = { Text("AniList") },
+                    title = {
+                        Text(
+                            text = stringResource(MR.strings.label_home),
+                            style = MaterialTheme.typography.titleLarge,
+                        )
+                    },
                     actions = {
                         IconButton(onClick = { navigator.push(UpdatesTab) }) {
                             Icon(
-                                painter = painterResource(R.drawable.ic_updates_outline_24dp),
+                                imageVector = Icons.Filled.Notifications,
                                 contentDescription = stringResource(MR.strings.label_recent_updates),
                             )
                         }
