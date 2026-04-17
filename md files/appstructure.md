@@ -122,7 +122,9 @@ Each domain has clear ownership, interface boundaries, and failure behavior.
 
 ---
 
-## 4. Material 3 and Adaptive UX System
+## 4. Material 3 Expressive and Adaptive UX System
+
+This app uses Material 3 Expressive (M3E) as a system, not as isolated component swaps.
 
 ### 4.1 Theming Model
 
@@ -131,11 +133,13 @@ Two coordinated theme sources are supported:
 - Global dynamic system theme (device-driven).
 - Content-based accent extraction on media detail and consumption contexts.
 
-Requirement:
+Requirements:
 
+- Theme root must support expressive motion tokens (`MotionScheme.expressive`).
 - Must never break contrast or semantic role mapping when palette changes.
+- Feature UIs must consume semantic tokens; no ad-hoc UI literals.
 
-### 4.2 Color Role Policy
+### 4.2 Color and Surface Role Policy
 
 The app maps actions and states to M3 semantic roles.
 
@@ -146,25 +150,49 @@ The app maps actions and states to M3 semantic roles.
 | Secondary | Secondary tracking controls |
 | Tertiary | Distinct counters/badges (new, unread, alerts) |
 | Surface / Surface Container | Base and card hierarchy |
-| Error | Destructive actions, network/sync failure indicators |
+| Surface Container Low/High | Group containers, sheets, and elevated clusters |
+| Error / Error Container | Destructive actions, network/sync failure indicators |
 
-### 4.3 Typography Policy
+Policy:
+
+- If a composable has interaction state (`selected`, `pressed`, `active`), color must come from `MaterialTheme.colorScheme`.
+- Hardcoded `Color(0x...)` is allowed only for content media (poster/artwork), not UI chrome.
+
+### 4.3 Shape Rhythm Policy
+
+Use large, confident, and role-consistent shape tokens:
+
+- Page-level containers: `extraLarge`.
+- Row-level containers: `large`.
+- Chips/badges/compact controls: `small` to `medium`.
+- Hero/contextual action surfaces: `extraLargeIncreased` where available.
+
+Rules:
+
+- Do not mix more than three corner radii on one screen.
+- Prefer `MaterialTheme.shapes.*` tokens over inline `RoundedCornerShape(...)`.
+
+### 4.4 Typography and Variable Font Policy
 
 - Use expressive hierarchy for title moments and hero content.
 - Keep synopsis/review text in high-readability contrast targets.
 - Avoid decorative typography in dense utility screens.
+- For selection/active states, prefer variable font axis transitions over static bold overrides.
 
-### 4.4 Motion Policy
+### 4.5 Motion Policy
 
-- Use spring-based transitions for list/card feedback and pane transitions.
-- Prefer spatial continuity over decorative animation.
+- Use tokenized motion from `MaterialTheme.motionScheme`.
+- Use spatial specs for layout/position/shape transitions.
+- Use effects specs for alpha/color/content transitions.
+- Avoid arbitrary timing constants except where no tokenized spec exists.
 - All motion must degrade safely on lower-performance devices.
 
-### 4.5 Adaptive Navigation Policy
+### 4.6 Adaptive Navigation Policy
 
 Compact widths:
 
 - Bottom navigation with up to five top-level destinations.
+- Use short bottom bar height (56dp) on phone form factors.
 
 Medium/expanded widths:
 
@@ -175,6 +203,34 @@ Must:
 
 - Keep top-level navigation persistent.
 - Avoid route loss when rotating/folding.
+- Keep tablet/foldable rail behavior unchanged while phone bar is shortened.
+
+### 4.7 M3E Component Remap Matrix for This App
+
+This remap is the implementation target across Aniyomi-origin and AniHyou-origin surfaces.
+
+| App Surface | Current/Legacy Pattern | M3 Expressive Target |
+|---|---|---|
+| Library, updates, history list rows | Flat `ListItem` rows or mixed ad-hoc containers | Per-row `Surface` container using `surfaceContainer` + `shapes.large` |
+| Overflow actions across screens | Flat `DropdownMenu` grouping | Vertical menu with plain/gap/divider pattern based on action grouping |
+| Primary + `MoreVert` action pairs | Separate button plus overflow icon | `SplitButton` when one action is dominant and variants share intent |
+| Player and reader contextual controls | Custom overlay bars | `FloatingToolbar` for contextual page-level actions |
+| Play/pause and high-salience toggles | Icon swaps only | Shape morph + icon/content transition with motion tokens |
+| Loading states | `CircularProgressIndicator` and legacy linear indicators | `ContainedLoadingIndicator` or expressive loading variants |
+| Tracking status controls | Isolated buttons/chips with mixed emphasis | `ConnectedButtonGroup` or split-status pattern with semantic containers |
+| AniHyou profile/stats emphasis text | Static weight overrides | Variable font axis for state emphasis where supported |
+
+### 4.8 Module-Level Migration Scope
+
+Prioritize migration by module ownership in this repository:
+
+- App shell and shared components: `app/`, `presentation-core/`.
+- AniHyou-origin feature surfaces: `AniHyou-android/feature/` and `AniHyou-android/core/ui/`.
+- Shared UI primitives and wrappers: `core/ui/`, `presentation-core/`.
+
+Execution rule:
+
+- Migrate wrappers and shared primitives first, then feature callsites, to avoid repetitive rework.
 
 ---
 
