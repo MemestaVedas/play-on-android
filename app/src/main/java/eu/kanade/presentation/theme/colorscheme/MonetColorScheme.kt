@@ -46,10 +46,24 @@ internal class MonetColorScheme(context: Context) : BaseColorScheme() {
         @Suppress("Unused")
         @SuppressLint("RestrictedApi")
         fun extractSeedColorFromImage(bitmap: Bitmap): Int? {
-            val width = bitmap.width
-            val height = bitmap.height
+            val sourceBitmap = if (
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+                bitmap.config == Bitmap.Config.HARDWARE
+            ) {
+                bitmap.copy(Bitmap.Config.ARGB_8888, false) ?: return null
+            } else {
+                bitmap
+            }
+
+            val width = sourceBitmap.width
+            val height = sourceBitmap.height
             val bitmapPixels = IntArray(width * height)
-            bitmap.getPixels(bitmapPixels, 0, width, 0, 0, width, height)
+            sourceBitmap.getPixels(bitmapPixels, 0, width, 0, 0, width, height)
+
+            if (sourceBitmap !== bitmap) {
+                sourceBitmap.recycle()
+            }
+
             return Score.score(QuantizerCelebi.quantize(bitmapPixels, 128), 1, 0)[0]
                 .takeIf { it != 0 } // Don't take fallback color
         }
