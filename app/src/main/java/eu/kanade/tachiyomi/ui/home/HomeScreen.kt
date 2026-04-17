@@ -27,7 +27,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -180,12 +182,12 @@ object HomeScreen : Screen() {
                                     .height(56.dp)
                                     .shadow(
                                         elevation = 12.dp,
-                                        shape = MaterialTheme.shapes.extraExtraLarge,
+                                        shape = MaterialTheme.shapes.extraLarge,
                                         ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
                                         spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
                                     )
-                                    .clip(MaterialTheme.shapes.extraExtraLarge),
-                                containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.97f),
+                                    .clip(MaterialTheme.shapes.extraLarge),
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.96f),
                                 windowInsets = WindowInsets(0),
                             ) {
                                 navStyle.tabs.fastForEach {
@@ -281,6 +283,13 @@ object HomeScreen : Screen() {
                     overflow = TextOverflow.Ellipsis,
                 )
             },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                selectedTextColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
+                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            ),
             alwaysShowLabel = true,
         )
     }
@@ -309,6 +318,13 @@ object HomeScreen : Screen() {
                     overflow = TextOverflow.Ellipsis,
                 )
             },
+            colors = NavigationRailItemDefaults.colors(
+                selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                selectedTextColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
+                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            ),
             alwaysShowLabel = true,
         )
     }
