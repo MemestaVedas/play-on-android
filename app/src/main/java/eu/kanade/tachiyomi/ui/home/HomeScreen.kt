@@ -15,10 +15,10 @@ import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -39,7 +39,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -178,13 +177,14 @@ object HomeScreen : Screen() {
                                         end = 24.dp,
                                         bottom = navBarInset + 12.dp,
                                     )
+                                    .height(56.dp)
                                     .shadow(
                                         elevation = 8.dp,
-                                        shape = RoundedCornerShape(40.dp),
+                                        shape = MaterialTheme.shapes.extraLarge,
                                         ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
                                         spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
                                     )
-                                    .clip(RoundedCornerShape(40.dp)),
+                                    .clip(MaterialTheme.shapes.extraLarge),
                                 containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.97f),
                                 windowInsets = WindowInsets(0),
                             ) {

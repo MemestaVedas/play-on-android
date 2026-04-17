@@ -20,7 +20,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
@@ -259,12 +258,15 @@ private fun HeroSection(
     media: AnilistApi.HomeAiringMedia,
     onClick: () -> Unit,
 ) {
+    val overlayScrim = MaterialTheme.colorScheme.scrim
+    val overlayText = MaterialTheme.colorScheme.inverseOnSurface
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .height(260.dp)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(28.dp),
+        shape = MaterialTheme.shapes.extraLarge,
     ) {
         Box {
             AsyncImage(
@@ -278,7 +280,7 @@ private fun HeroSection(
                     .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.9f)),
+                            colors = listOf(Color.Transparent, overlayScrim.copy(alpha = 0.84f)),
                             startY = 150f
                         )
                     )
@@ -305,14 +307,14 @@ private fun HeroSection(
                     text = media.title,
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Black,
-                    color = Color.White,
+                    color = overlayText,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     text = watchSubtitle(media),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.8f)
+                    color = overlayText.copy(alpha = 0.82f)
                 )
             }
         }
@@ -331,7 +333,7 @@ private fun TopHeaderCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = accent),
-        shape = RoundedCornerShape(24.dp),
+        shape = MaterialTheme.shapes.extraLarge,
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
@@ -365,7 +367,7 @@ private fun TopHeaderCard(
                     contentDescription = viewer.name,
                     modifier = Modifier
                         .size(64.dp)
-                        .clip(RoundedCornerShape(16.dp)),
+                        .clip(MaterialTheme.shapes.large),
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
@@ -461,8 +463,11 @@ private fun WatchingCard(
     media: AnilistApi.HomeAiringMedia,
     onClick: () -> Unit,
 ) {
+    val overlayScrim = MaterialTheme.colorScheme.scrim
+    val overlayText = MaterialTheme.colorScheme.inverseOnSurface
+
     Card(
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         modifier = Modifier
             .width(180.dp)
             .aspectRatio(3f / 4f)
@@ -480,7 +485,7 @@ private fun WatchingCard(
                     .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)),
+                            colors = listOf(Color.Transparent, overlayScrim.copy(alpha = 0.8f)),
                             startY = 100f
                         )
                     )
@@ -494,14 +499,14 @@ private fun WatchingCard(
                     text = media.title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                    color = overlayText,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     text = watchSubtitle(media),
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color.White.copy(alpha = 0.8f)
+                    color = overlayText.copy(alpha = 0.82f)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 LinearProgressIndicator(
@@ -509,9 +514,9 @@ private fun WatchingCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(4.dp)
-                        .clip(RoundedCornerShape(999.dp)),
+                        .clip(MaterialTheme.shapes.small),
                     color = MaterialTheme.colorScheme.primary,
-                    trackColor = Color.White.copy(alpha = 0.2f),
+                    trackColor = overlayText.copy(alpha = 0.24f),
                 )
             }
         }
@@ -538,8 +543,11 @@ private fun ReadingCarousel(
         contentPadding = PaddingValues(end = 8.dp),
     ) {
         items(entries, key = { it.id }) { item ->
+            val overlayScrim = MaterialTheme.colorScheme.scrim
+            val overlayText = MaterialTheme.colorScheme.inverseOnSurface
+
             Card(
-                shape = RoundedCornerShape(16.dp),
+                shape = MaterialTheme.shapes.large,
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                 modifier = Modifier
                     .width(160.dp)
@@ -558,7 +566,7 @@ private fun ReadingCarousel(
                             .fillMaxSize()
                             .background(
                                 Brush.verticalGradient(
-                                    colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)),
+                                    colors = listOf(Color.Transparent, overlayScrim.copy(alpha = 0.8f)),
                                     startY = 100f
                                 )
                             )
@@ -572,14 +580,14 @@ private fun ReadingCarousel(
                             text = item.title,
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White,
+                            color = overlayText,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
                             text = readingSubtitle(item),
                             style = MaterialTheme.typography.labelSmall,
-                            color = Color.White.copy(alpha = 0.8f)
+                            color = overlayText.copy(alpha = 0.82f)
                         )
                     }
                 }
@@ -597,8 +605,8 @@ private fun SectionHeaderWithPager(title: String) {
     ) {
         Text(
             text = title,
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.SemiBold,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             IconButton(onClick = {}, modifier = Modifier.size(32.dp)) {
@@ -643,7 +651,7 @@ private fun UpcomingSection(
                 }
 
                 Surface(
-                    shape = RoundedCornerShape(999.dp),
+                    shape = MaterialTheme.shapes.large,
                     color = surfaceColor,
                 ) {
                     Row(
@@ -677,7 +685,7 @@ private fun UpcomingSection(
         items.forEachIndexed { index, media ->
             val faded = index == items.lastIndex
             Card(
-                shape = RoundedCornerShape(18.dp),
+                shape = MaterialTheme.shapes.large,
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
                 modifier = Modifier
                     .alpha(if (faded) 0.74f else 1f)
@@ -758,7 +766,7 @@ private fun StatisticsSection(dashboard: AnilistApi.HomeDashboard) {
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Card(
-            shape = RoundedCornerShape(24.dp),
+            shape = MaterialTheme.shapes.extraLarge,
             colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         ) {
             Box(
@@ -795,7 +803,7 @@ private fun StatisticsSection(dashboard: AnilistApi.HomeDashboard) {
         }
 
         Card(
-            shape = RoundedCornerShape(24.dp),
+            shape = MaterialTheme.shapes.extraLarge,
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         ) {
             Column(
@@ -822,14 +830,14 @@ private fun StatisticsSection(dashboard: AnilistApi.HomeDashboard) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(8.dp)
-                        .clip(RoundedCornerShape(999.dp)),
+                        .clip(MaterialTheme.shapes.small),
                 )
             }
         }
 
         val breakdown = dashboard.animeStats.formatBreakdown.take(5)
         Card(
-            shape = RoundedCornerShape(24.dp),
+            shape = MaterialTheme.shapes.extraLarge,
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         ) {
             Column(
@@ -862,7 +870,7 @@ private fun StatisticsSection(dashboard: AnilistApi.HomeDashboard) {
                                 modifier = Modifier
                                     .weight(1f)
                                     .height((ratio * 70f).dp)
-                                    .clip(RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp))
+                                    .clip(MaterialTheme.shapes.small)
                                     .background(
                                         listOf(
                                             MaterialTheme.colorScheme.primary,
@@ -897,8 +905,8 @@ private fun SectionHeaderTabs(title: String) {
     ) {
         Text(
             text = title,
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.SemiBold,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
@@ -942,7 +950,7 @@ private fun ActivityCard(
     onOpenMedia: () -> Unit,
 ) {
     Card(
-        shape = RoundedCornerShape(18.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
         modifier = Modifier.clickable(enabled = activity.mediaId != null, onClick = onOpenMedia),
     ) {
