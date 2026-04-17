@@ -213,7 +213,7 @@ private fun HomeContent(
             TopHeaderCard(
                 dashboard = dashboard,
                 onRetry = onRetry,
-                onOpenProfile = { navigator.push(AnilistFavoritesScreen()) },
+                onOpenProfile = { navigator.push(AnilistFavoritesScreen(dashboard.viewer.id)) },
             )
         }
 
