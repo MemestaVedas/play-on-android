@@ -58,6 +58,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -68,8 +69,15 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import coil3.compose.AsyncImage
 import eu.kanade.presentation.anilist.details.AnilistFavoritesScreen
 import eu.kanade.presentation.anilist.details.AnilistMediaDetailsScreen
+import eu.kanade.presentation.theme.colorscheme.MonetColorScheme
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.data.track.anilist.AnilistApi
+import eu.kanade.tachiyomi.util.system.getBitmapOrNull
+import com.google.android.material.color.utilities.Hct
+import com.google.android.material.color.utilities.MaterialDynamicColors
+import com.google.android.material.color.utilities.SchemeContent
+import coil3.asDrawable
+import androidx.compose.ui.platform.LocalContext
 import java.time.Duration
 import java.time.Instant
 
@@ -178,6 +186,8 @@ private fun HomeContent(
 ) {
     val navigator = LocalNavigator.currentOrThrow
     val notifyToggles = remember { mutableStateMapOf<Int, Boolean>() }
+    val posterRoleColors = remember { mutableStateMapOf<String, PosterRoleColors>() }
+    val isDarkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
     val homeTabs = listOf("Discover", "Activity Feed", "Current")
 
@@ -201,7 +211,17 @@ private fun HomeContent(
         if (selectedTabIndex == 0) {
         item {
             dashboard.airingMedia.firstOrNull()?.let { media ->
-                HeroSection(media = media, onClick = { navigator.push(AnilistMediaDetailsScreen(media.id)) })
+                HeroSection(
+                    media = media,
+                    roleColors = media.coverImageUrl?.let { posterRoleColors[it] },
+                    isDarkTheme = isDarkTheme,
+                    onPosterSeed = { url, seed ->
+                        if (posterRoleColors[url] == null) {
+                            posterRoleColors[url] = posterRoleColorsFromSeed(seed, isDarkTheme)
+                        }
+                    },
+                    onClick = { navigator.push(AnilistMediaDetailsScreen(media.id)) },
+                )
             } ?: Spacer(modifier = Modifier.height(16.dp))
         }
 
@@ -215,6 +235,13 @@ private fun HomeContent(
         item {
             WatchingCarousel(
                 media = dashboard.airingMedia,
+                roleColors = posterRoleColors,
+                isDarkTheme = isDarkTheme,
+                onPosterSeed = { url, seed ->
+                    if (posterRoleColors[url] == null) {
+                        posterRoleColors[url] = posterRoleColorsFromSeed(seed, isDarkTheme)
+                    }
+                },
                 onOpenItem = { media -> navigator.push(AnilistMediaDetailsScreen(media.id)) },
             )
         }
@@ -229,6 +256,13 @@ private fun HomeContent(
         item {
             ReadingCarousel(
                 entries = dashboard.readingMedia,
+                roleColors = posterRoleColors,
+                isDarkTheme = isDarkTheme,
+                onPosterSeed = { url, seed ->
+                    if (posterRoleColors[url] == null) {
+                        posterRoleColors[url] = posterRoleColorsFromSeed(seed, isDarkTheme)
+                    }
+                },
                 onOpenItem = { media -> navigator.push(AnilistMediaDetailsScreen(media.id)) },
             )
         }
@@ -281,6 +315,13 @@ private fun HomeContent(
             item {
                 WatchingCarousel(
                     media = dashboard.airingMedia,
+                    roleColors = posterRoleColors,
+                    isDarkTheme = isDarkTheme,
+                    onPosterSeed = { url, seed ->
+                        if (posterRoleColors[url] == null) {
+                            posterRoleColors[url] = posterRoleColorsFromSeed(seed, isDarkTheme)
+                        }
+                    },
                     onOpenItem = { media -> navigator.push(AnilistMediaDetailsScreen(media.id)) },
                 )
             }
@@ -292,6 +333,13 @@ private fun HomeContent(
             item {
                 ReadingCarousel(
                     entries = dashboard.readingMedia,
+                    roleColors = posterRoleColors,
+                    isDarkTheme = isDarkTheme,
+                    onPosterSeed = { url, seed ->
+                        if (posterRoleColors[url] == null) {
+                            posterRoleColors[url] = posterRoleColorsFromSeed(seed, isDarkTheme)
+                        }
+                    },
                     onOpenItem = { media -> navigator.push(AnilistMediaDetailsScreen(media.id)) },
                 )
             }
@@ -306,10 +354,16 @@ private fun HomeContent(
 @Composable
 private fun HeroSection(
     media: AnilistApi.HomeAiringMedia,
+    roleColors: PosterRoleColors?,
+    isDarkTheme: Boolean,
+    onPosterSeed: (url: String, seed: Int) -> Unit,
     onClick: () -> Unit,
 ) {
-    val overlayScrim = MaterialTheme.colorScheme.scrim
-    val overlayText = MaterialTheme.colorScheme.inverseOnSurface
+    val context = LocalContext.current
+    val overlayScrim = roleColors?.primary ?: MaterialTheme.colorScheme.scrim
+    val overlayText = roleColors?.onPrimary ?: MaterialTheme.colorScheme.inverseOnSurface
+    val featuredContainer = roleColors?.secondaryContainer ?: MaterialTheme.colorScheme.primary
+    val featuredContent = roleColors?.onSecondaryContainer ?: MaterialTheme.colorScheme.onPrimary
 
     Card(
         modifier = Modifier
@@ -323,14 +377,21 @@ private fun HeroSection(
                 model = media.coverImageUrl,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                onSuccess = { success ->
+                    val url = media.coverImageUrl ?: return@AsyncImage
+                    if (roleColors != null) return@AsyncImage
+                    val bitmap = success.result.image.asDrawable(context.resources).getBitmapOrNull() ?: return@AsyncImage
+                    val seed = MonetColorScheme.extractSeedColorFromImage(bitmap) ?: return@AsyncImage
+                    onPosterSeed(url, seed)
+                },
             )
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, overlayScrim.copy(alpha = 0.84f)),
+                            colors = listOf(Color.Transparent, overlayScrim.copy(alpha = if (isDarkTheme) 0.84f else 0.74f)),
                             startY = 150f
                         )
                     )
@@ -342,13 +403,13 @@ private fun HeroSection(
             ) {
                 Surface(
                     shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = featuredContainer,
                     modifier = Modifier.padding(bottom = 8.dp)
                 ) {
                     Text(
                         text = "FEATURED",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onPrimary,
+                        color = featuredContent,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                         fontWeight = FontWeight.Bold
                     )
@@ -486,6 +547,9 @@ private fun SectionHeader(
 @Composable
 private fun WatchingCarousel(
     media: List<AnilistApi.HomeAiringMedia>,
+    roleColors: Map<String, PosterRoleColors>,
+    isDarkTheme: Boolean,
+    onPosterSeed: (url: String, seed: Int) -> Unit,
     onOpenItem: (AnilistApi.HomeAiringMedia) -> Unit,
 ) {
     if (media.isEmpty()) {
@@ -500,7 +564,13 @@ private fun WatchingCarousel(
 
     DiscoverLazyRow(itemSpacing = 12.dp) {
         items(media, key = { it.id }) { item ->
-            WatchingCard(media = item, onClick = { onOpenItem(item) })
+            WatchingCard(
+                media = item,
+                roleColors = item.coverImageUrl?.let { roleColors[it] },
+                isDarkTheme = isDarkTheme,
+                onPosterSeed = onPosterSeed,
+                onClick = { onOpenItem(item) },
+            )
         }
     }
 }
@@ -508,10 +578,17 @@ private fun WatchingCarousel(
 @Composable
 private fun WatchingCard(
     media: AnilistApi.HomeAiringMedia,
+    roleColors: PosterRoleColors?,
+    isDarkTheme: Boolean,
+    onPosterSeed: (url: String, seed: Int) -> Unit,
     onClick: () -> Unit,
 ) {
-    val overlayScrim = MaterialTheme.colorScheme.scrim
-    val overlayText = MaterialTheme.colorScheme.inverseOnSurface
+    val context = LocalContext.current
+    val overlayScrim = roleColors?.primary ?: MaterialTheme.colorScheme.scrim
+    val overlayText = roleColors?.onPrimary ?: MaterialTheme.colorScheme.inverseOnSurface
+    val progressColor = roleColors?.secondaryContainer ?: MaterialTheme.colorScheme.primary
+    val progressTrack = roleColors?.onSecondaryContainer?.copy(alpha = 0.24f)
+        ?: overlayText.copy(alpha = 0.24f)
 
     Card(
         shape = MaterialTheme.shapes.large,
@@ -525,14 +602,21 @@ private fun WatchingCard(
                 model = media.coverImageUrl,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                onSuccess = { success ->
+                    val url = media.coverImageUrl ?: return@AsyncImage
+                    if (roleColors != null) return@AsyncImage
+                    val bitmap = success.result.image.asDrawable(context.resources).getBitmapOrNull() ?: return@AsyncImage
+                    val seed = MonetColorScheme.extractSeedColorFromImage(bitmap) ?: return@AsyncImage
+                    onPosterSeed(url, seed)
+                },
             )
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, overlayScrim.copy(alpha = 0.8f)),
+                            colors = listOf(Color.Transparent, overlayScrim.copy(alpha = if (isDarkTheme) 0.8f else 0.7f)),
                             startY = 100f
                         )
                     )
@@ -562,8 +646,8 @@ private fun WatchingCard(
                         .fillMaxWidth()
                         .height(4.dp)
                         .clip(MaterialTheme.shapes.small),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = overlayText.copy(alpha = 0.24f),
+                    color = progressColor,
+                    trackColor = progressTrack,
                 )
             }
         }
@@ -573,6 +657,9 @@ private fun WatchingCard(
 @Composable
 private fun ReadingCarousel(
     entries: List<AnilistApi.HomeReadingMedia>,
+    roleColors: Map<String, PosterRoleColors>,
+    isDarkTheme: Boolean,
+    onPosterSeed: (url: String, seed: Int) -> Unit,
     onOpenItem: (AnilistApi.HomeReadingMedia) -> Unit,
 ) {
     if (entries.isEmpty()) {
@@ -587,8 +674,10 @@ private fun ReadingCarousel(
 
     DiscoverLazyRow(itemSpacing = 16.dp) {
         items(entries, key = { it.id }) { item ->
-            val overlayScrim = MaterialTheme.colorScheme.scrim
-            val overlayText = MaterialTheme.colorScheme.inverseOnSurface
+            val context = LocalContext.current
+            val itemRoleColors = item.coverImageUrl?.let { roleColors[it] }
+            val overlayScrim = itemRoleColors?.primary ?: MaterialTheme.colorScheme.scrim
+            val overlayText = itemRoleColors?.onPrimary ?: MaterialTheme.colorScheme.inverseOnSurface
 
             Card(
                 shape = MaterialTheme.shapes.large,
@@ -603,14 +692,21 @@ private fun ReadingCarousel(
                         model = item.coverImageUrl,
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
+                        onSuccess = { success ->
+                            val url = item.coverImageUrl ?: return@AsyncImage
+                            if (itemRoleColors != null) return@AsyncImage
+                            val bitmap = success.result.image.asDrawable(context.resources).getBitmapOrNull() ?: return@AsyncImage
+                            val seed = MonetColorScheme.extractSeedColorFromImage(bitmap) ?: return@AsyncImage
+                            onPosterSeed(url, seed)
+                        },
                     )
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
                             .background(
                                 Brush.verticalGradient(
-                                    colors = listOf(Color.Transparent, overlayScrim.copy(alpha = 0.8f)),
+                                    colors = listOf(Color.Transparent, overlayScrim.copy(alpha = if (isDarkTheme) 0.8f else 0.72f)),
                                     startY = 100f
                                 )
                             )
@@ -638,6 +734,24 @@ private fun ReadingCarousel(
             }
         }
     }
+}
+
+private data class PosterRoleColors(
+    val primary: Color,
+    val onPrimary: Color,
+    val secondaryContainer: Color,
+    val onSecondaryContainer: Color,
+)
+
+private fun posterRoleColorsFromSeed(seed: Int, dark: Boolean): PosterRoleColors {
+    val scheme = SchemeContent(Hct.fromInt(seed), dark, 0.0)
+    val dynamicColors = MaterialDynamicColors()
+    return PosterRoleColors(
+        primary = Color(dynamicColors.primary().getArgb(scheme)),
+        onPrimary = Color(dynamicColors.onPrimary().getArgb(scheme)),
+        secondaryContainer = Color(dynamicColors.secondaryContainer().getArgb(scheme)),
+        onSecondaryContainer = Color(dynamicColors.onSecondaryContainer().getArgb(scheme)),
+    )
 }
 
 @Composable
