@@ -2,8 +2,6 @@ package eu.kanade.presentation.anilist.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.snapping.SnapPosition
-import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,9 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
@@ -34,6 +29,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ContainedLoadingIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -63,6 +59,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
+import androidx.compose.material3.carousel.maskClip
+import androidx.compose.material3.carousel.rememberCarouselState
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -399,8 +398,8 @@ private fun HeroSection(
                     .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, overlayScrim.copy(alpha = if (isDarkTheme) 0.84f else 0.74f)),
-                            startY = 150f
+                            colors = listOf(Color.Transparent, overlayScrim.copy(alpha = if (isDarkTheme) 0.94f else 0.88f)),
+                            startY = 130f
                         )
                     )
             )
@@ -570,16 +569,23 @@ private fun WatchingCarousel(
         return
     }
 
-    DiscoverLazyRow(itemSpacing = 12.dp) {
-        items(media, key = { it.id }) { item ->
-            WatchingCard(
-                media = item,
-                roleColors = item.coverImageUrl?.let { roleColors[it] },
-                isDarkTheme = isDarkTheme,
-                onPosterSeed = onPosterSeed,
-                onClick = { onOpenItem(item) },
-            )
-        }
+    HorizontalMultiBrowseCarousel(
+        state = rememberCarouselState { media.size },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        preferredItemWidth = 186.dp,
+        itemSpacing = 12.dp,
+        contentPadding = PaddingValues(horizontal = 16.dp),
+    ) { index ->
+        val item = media[index]
+        WatchingCard(
+            media = item,
+            roleColors = item.coverImageUrl?.let { roleColors[it] },
+            isDarkTheme = isDarkTheme,
+            onPosterSeed = onPosterSeed,
+            onClick = { onOpenItem(item) },
+        )
     }
 }
 
@@ -601,8 +607,9 @@ private fun WatchingCard(
     Card(
         shape = MaterialTheme.shapes.large,
         modifier = Modifier
-            .width(180.dp)
-            .aspectRatio(3f / 4f)
+            .fillMaxWidth()
+            .height(250.dp)
+            .maskClip(MaterialTheme.shapes.large)
             .clickable(onClick = onClick)
     ) {
         Box {
@@ -624,8 +631,8 @@ private fun WatchingCard(
                     .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, overlayScrim.copy(alpha = if (isDarkTheme) 0.8f else 0.7f)),
-                            startY = 100f
+                            colors = listOf(Color.Transparent, overlayScrim.copy(alpha = if (isDarkTheme) 0.92f else 0.84f)),
+                            startY = 90f
                         )
                     )
             )
@@ -680,64 +687,72 @@ private fun ReadingCarousel(
         return
     }
 
-    DiscoverLazyRow(itemSpacing = 16.dp) {
-        items(entries, key = { it.id }) { item ->
-            val context = LocalContext.current
-            val itemRoleColors = item.coverImageUrl?.let { roleColors[it] }
-            val overlayScrim = itemRoleColors?.primary ?: MaterialTheme.colorScheme.scrim
-            val overlayText = itemRoleColors?.onPrimary ?: MaterialTheme.colorScheme.inverseOnSurface
+    HorizontalMultiBrowseCarousel(
+        state = rememberCarouselState { entries.size },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        preferredItemWidth = 160.dp,
+        itemSpacing = 16.dp,
+        contentPadding = PaddingValues(horizontal = 16.dp),
+    ) { index ->
+        val item = entries[index]
+        val context = LocalContext.current
+        val itemRoleColors = item.coverImageUrl?.let { roleColors[it] }
+        val overlayScrim = itemRoleColors?.primary ?: MaterialTheme.colorScheme.scrim
+        val overlayText = itemRoleColors?.onPrimary ?: MaterialTheme.colorScheme.inverseOnSurface
 
-            Card(
-                shape = MaterialTheme.shapes.large,
-                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-                modifier = Modifier
-                    .width(160.dp)
-                    .aspectRatio(2f / 3f)
-                    .clickable { onOpenItem(item) }
-            ) {
-                Box {
-                    AsyncImage(
-                        model = item.coverImageUrl,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
-                        onSuccess = { success ->
-                            val url = item.coverImageUrl ?: return@AsyncImage
-                            if (itemRoleColors != null) return@AsyncImage
-                            val bitmap = success.result.image.asDrawable(context.resources).getBitmapOrNull() ?: return@AsyncImage
-                            val seed = MonetColorScheme.extractSeedColorFromImage(bitmap) ?: return@AsyncImage
-                            onPosterSeed(url, seed)
-                        },
-                    )
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(Color.Transparent, overlayScrim.copy(alpha = if (isDarkTheme) 0.8f else 0.72f)),
-                                    startY = 100f
-                                )
+        Card(
+            shape = MaterialTheme.shapes.large,
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(240.dp)
+                .maskClip(MaterialTheme.shapes.large)
+                .clickable { onOpenItem(item) }
+        ) {
+            Box {
+                AsyncImage(
+                    model = item.coverImageUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                    onSuccess = { success ->
+                        val url = item.coverImageUrl ?: return@AsyncImage
+                        if (itemRoleColors != null) return@AsyncImage
+                        val bitmap = success.result.image.asDrawable(context.resources).getBitmapOrNull() ?: return@AsyncImage
+                        val seed = MonetColorScheme.extractSeedColorFromImage(bitmap) ?: return@AsyncImage
+                        onPosterSeed(url, seed)
+                    },
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, overlayScrim.copy(alpha = if (isDarkTheme) 0.9f else 0.8f)),
+                                startY = 90f
                             )
+                        )
+                )
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(12.dp)
+                ) {
+                    Text(
+                        text = item.title,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = overlayText,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                     )
-                    Column(
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(12.dp)
-                    ) {
-                        Text(
-                            text = item.title,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = overlayText,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            text = readingSubtitle(item),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = overlayText.copy(alpha = 0.82f)
-                        )
-                    }
+                    Text(
+                        text = readingSubtitle(item),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = overlayText.copy(alpha = 0.82f)
+                    )
                 }
             }
         }

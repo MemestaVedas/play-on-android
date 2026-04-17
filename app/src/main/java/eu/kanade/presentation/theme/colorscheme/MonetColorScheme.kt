@@ -57,11 +57,43 @@ internal class MonetColorScheme(context: Context) : BaseColorScheme() {
 
             val width = sourceBitmap.width
             val height = sourceBitmap.height
-            val bitmapPixels = IntArray(width * height)
-            sourceBitmap.getPixels(bitmapPixels, 0, width, 0, 0, width, height)
+            val startY = height / 2
+            val lowerHalfBitmap = runCatching {
+                Bitmap.createBitmap(sourceBitmap, 0, startY, width, height - startY)
+            }.getOrElse {
+                sourceBitmap
+            }
+
+            val sampleWidth = minOf(lowerHalfBitmap.width, 48)
+            val sampleHeight = minOf(lowerHalfBitmap.height, 48)
+            val sampledBitmap = if (
+                lowerHalfBitmap.width > sampleWidth ||
+                lowerHalfBitmap.height > sampleHeight
+            ) {
+                Bitmap.createScaledBitmap(lowerHalfBitmap, sampleWidth, sampleHeight, true)
+            } else {
+                lowerHalfBitmap
+            }
+
+            val bitmapPixels = IntArray(sampledBitmap.width * sampledBitmap.height)
+            sampledBitmap.getPixels(
+                bitmapPixels,
+                0,
+                sampledBitmap.width,
+                0,
+                0,
+                sampledBitmap.width,
+                sampledBitmap.height,
+            )
 
             if (sourceBitmap !== bitmap) {
                 sourceBitmap.recycle()
+            }
+            if (lowerHalfBitmap !== sourceBitmap) {
+                lowerHalfBitmap.recycle()
+            }
+            if (sampledBitmap !== lowerHalfBitmap) {
+                sampledBitmap.recycle()
             }
 
             return Score.score(QuantizerCelebi.quantize(bitmapPixels, 128), 1, 0)[0]
