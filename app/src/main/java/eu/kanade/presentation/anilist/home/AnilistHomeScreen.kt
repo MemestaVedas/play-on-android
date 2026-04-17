@@ -2,6 +2,8 @@ package eu.kanade.presentation.anilist.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.snapping.SnapPosition
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +21,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
@@ -37,13 +40,18 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -170,12 +178,27 @@ private fun HomeContent(
 ) {
     val navigator = LocalNavigator.currentOrThrow
     val notifyToggles = remember { mutableStateMapOf<Int, Boolean>() }
+    var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
+    val homeTabs = listOf("Discover", "Activity Feed", "Current")
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
+        item {
+            PrimaryTabRow(selectedTabIndex = selectedTabIndex) {
+                homeTabs.forEachIndexed { index, tab ->
+                    Tab(
+                        selected = selectedTabIndex == index,
+                        onClick = { selectedTabIndex = index },
+                        text = { Text(tab) },
+                    )
+                }
+            }
+        }
+
+        if (selectedTabIndex == 0) {
         item {
             dashboard.airingMedia.firstOrNull()?.let { media ->
                 HeroSection(media = media, onClick = { navigator.push(AnilistMediaDetailsScreen(media.id)) })
@@ -232,19 +255,46 @@ private fun HomeContent(
         item {
             StatisticsSection(dashboard = dashboard)
         }
-
-        item {
-            SectionHeaderTabs(title = "Community Feed")
         }
 
-        item {
-            CommunityFeedSection(
-                dashboard = dashboard,
-                onOpenActivityMedia = { activity ->
-                    val mediaId = activity.mediaId ?: return@CommunityFeedSection
-                    navigator.push(AnilistMediaDetailsScreen(mediaId))
-                },
-            )
+        if (selectedTabIndex == 1) {
+            item {
+                SectionHeaderTabs(title = "Community Feed")
+            }
+
+            item {
+                CommunityFeedSection(
+                    dashboard = dashboard,
+                    onOpenActivityMedia = { activity ->
+                        val mediaId = activity.mediaId ?: return@CommunityFeedSection
+                        navigator.push(AnilistMediaDetailsScreen(mediaId))
+                    },
+                )
+            }
+        }
+
+        if (selectedTabIndex == 2) {
+            item {
+                SectionHeader(title = "Currently Watching")
+            }
+
+            item {
+                WatchingCarousel(
+                    media = dashboard.airingMedia,
+                    onOpenItem = { media -> navigator.push(AnilistMediaDetailsScreen(media.id)) },
+                )
+            }
+
+            item {
+                SectionHeader(title = "Currently Reading")
+            }
+
+            item {
+                ReadingCarousel(
+                    entries = dashboard.readingMedia,
+                    onOpenItem = { media -> navigator.push(AnilistMediaDetailsScreen(media.id)) },
+                )
+            }
         }
 
         item {
@@ -448,10 +498,7 @@ private fun WatchingCarousel(
         return
     }
 
-    LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(end = 8.dp),
-    ) {
+    DiscoverLazyRow(itemSpacing = 12.dp) {
         items(media, key = { it.id }) { item ->
             WatchingCard(media = item, onClick = { onOpenItem(item) })
         }
@@ -538,10 +585,7 @@ private fun ReadingCarousel(
         return
     }
 
-    LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        contentPadding = PaddingValues(end = 8.dp),
-    ) {
+    DiscoverLazyRow(itemSpacing = 16.dp) {
         items(entries, key = { it.id }) { item ->
             val overlayScrim = MaterialTheme.colorScheme.scrim
             val overlayText = MaterialTheme.colorScheme.inverseOnSurface
@@ -635,7 +679,7 @@ private fun UpcomingSection(
     )
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        DiscoverLazyRow(itemSpacing = 8.dp) {
             items(weekDays) { (day, date) ->
                 val selected = day == "Monday"
                 val surfaceColor = if (selected) {
@@ -1027,6 +1071,24 @@ private fun StatusChip(label: String) {
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
         )
     }
+}
+
+@Composable
+private fun DiscoverLazyRow(
+    itemSpacing: androidx.compose.ui.unit.Dp,
+    content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit,
+) {
+    val state = rememberLazyListState()
+    LazyRow(
+        state = state,
+        horizontalArrangement = Arrangement.spacedBy(itemSpacing),
+        contentPadding = PaddingValues(8.dp),
+        flingBehavior = rememberSnapFlingBehavior(
+            lazyListState = state,
+            snapPosition = SnapPosition.Start,
+        ),
+        content = content,
+    )
 }
 
 @Composable

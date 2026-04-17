@@ -173,18 +173,18 @@ object HomeScreen : Screen() {
                             NavigationBar(
                                 modifier = Modifier
                                     .padding(
-                                        start = 24.dp,
-                                        end = 24.dp,
+                                        start = 16.dp,
+                                        end = 16.dp,
                                         bottom = navBarInset + 12.dp,
                                     )
                                     .height(56.dp)
                                     .shadow(
-                                        elevation = 8.dp,
-                                        shape = MaterialTheme.shapes.extraLarge,
+                                        elevation = 12.dp,
+                                        shape = MaterialTheme.shapes.extraExtraLarge,
                                         ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
                                         spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
                                     )
-                                    .clip(MaterialTheme.shapes.extraLarge),
+                                    .clip(MaterialTheme.shapes.extraExtraLarge),
                                 containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.97f),
                                 windowInsets = WindowInsets(0),
                             ) {
