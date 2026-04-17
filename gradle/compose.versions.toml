@@ -1,5 +1,6 @@
 [versions]
 compose-bom = "2025.03.00"
+material3 = "1.4.0-alpha14"
 
 [libraries]
 activity = "androidx.activity:activity-compose:1.10.1"
@@ -12,7 +13,7 @@ ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
 ui-util = { module = "androidx.compose.ui:ui-util" }
 
-material3-core = { module = "androidx.compose.material3:material3" }
+material3-core = { module = "androidx.compose.material3:material3", version.ref = "material3" }
 material-icons = { module = "androidx.compose.material:material-icons-extended" }
 
 glance = "androidx.glance:glance-appwidget:1.1.1"
