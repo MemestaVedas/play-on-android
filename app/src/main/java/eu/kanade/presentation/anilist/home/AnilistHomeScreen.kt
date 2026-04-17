@@ -210,6 +210,14 @@ private fun HomeContent(
 
         if (selectedTabIndex == 0) {
         item {
+            TopHeaderCard(
+                dashboard = dashboard,
+                onRetry = onRetry,
+                onOpenProfile = { navigator.push(AnilistFavoritesScreen()) },
+            )
+        }
+
+        item {
             dashboard.airingMedia.firstOrNull()?.let { media ->
                 HeroSection(
                     media = media,

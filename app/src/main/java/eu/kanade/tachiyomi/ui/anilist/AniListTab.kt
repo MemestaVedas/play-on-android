@@ -1,9 +1,7 @@
 package eu.kanade.tachiyomi.ui.anilist
 
-import android.content.res.Resources
-import android.graphics.Bitmap
-import android.graphics.Canvas
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -14,19 +12,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.painter.BitmapPainter
-import androidx.compose.ui.platform.LocalContext
-import androidx.core.content.ContextCompat
-import androidx.core.graphics.drawable.toBitmap
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import eu.kanade.presentation.anilist.home.AnilistHomeScreen
 import eu.kanade.presentation.util.Tab
-import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.ui.updates.UpdatesTab
 import tachiyomi.i18n.MR
@@ -38,7 +30,7 @@ data object AniListTab : Tab {
         @Composable
         get() {
             val title = stringResource(MR.strings.label_home)
-            val icon = rememberAniListTabPainter()
+            val icon = rememberVectorPainter(Icons.Filled.Home)
             return TabOptions(
                 index = 0u,
                 title = title,
@@ -82,25 +74,5 @@ data object AniListTab : Tab {
         LaunchedEffect(Unit) {
             (context as? MainActivity)?.ready = true
         }
-    }
-}
-
-@Composable
-private fun rememberAniListTabPainter(): BitmapPainter {
-    val context = LocalContext.current
-    return remember(context) {
-        val drawable = ContextCompat.getDrawable(context, R.drawable.ic_tracker_anilist)
-            ?: throw Resources.NotFoundException()
-        val sourceBitmap = drawable.toBitmap()
-        val scale = 0.78f
-        val targetWidth = (sourceBitmap.width / scale).toInt()
-        val targetHeight = (sourceBitmap.height / scale).toInt()
-        val outputBitmap = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888)
-        Canvas(outputBitmap).apply {
-            val left = (targetWidth - sourceBitmap.width) / 2f
-            val top = (targetHeight - sourceBitmap.height) / 2f
-            drawBitmap(sourceBitmap, left, top, null)
-        }
-        BitmapPainter(outputBitmap.asImageBitmap())
     }
 }
