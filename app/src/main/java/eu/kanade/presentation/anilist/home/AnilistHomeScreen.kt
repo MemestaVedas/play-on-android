@@ -2,13 +2,14 @@ package eu.kanade.presentation.anilist.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.snapping.SnapPosition
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,6 +18,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
@@ -60,7 +64,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
-import androidx.compose.material3.carousel.maskClip
 import androidx.compose.material3.carousel.rememberCarouselState
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -190,29 +193,77 @@ private fun HomeContent(
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
     val homeTabs = listOf("Discover", "Activity Feed", "Current")
 
+    // PrimaryTabRow is OUTSIDE the scroll container so it stays pinned at top
+    Column(modifier = Modifier.fillMaxSize()) {
+        PrimaryTabRow(selectedTabIndex = selectedTabIndex) {
+            homeTabs.forEachIndexed { index, tab ->
+                Tab(
+                    selected = selectedTabIndex == index,
+                    onClick = { selectedTabIndex = index },
+                    text = { Text(tab) },
+                )
+            }
+        }
+
+        // Each tab gets its own independent LazyColumn — no item bleeding
+        when (selectedTabIndex) {
+            0 -> DiscoverTab(
+                dashboard = dashboard,
+                posterRoleColors = posterRoleColors,
+                isDarkTheme = isDarkTheme,
+                notifyToggles = notifyToggles,
+                onRetry = onRetry,
+                onOpenMedia = { id -> navigator.push(AnilistMediaDetailsScreen(id)) },
+                onOpenProfile = { navigator.push(AnilistFavoritesScreen(dashboard.viewer.id)) },
+                onPosterSeed = { url, seed ->
+                    if (posterRoleColors[url] == null) {
+                        posterRoleColors[url] = posterRoleColorsFromSeed(seed, isDarkTheme)
+                    }
+                },
+            )
+            1 -> ActivityFeedTab(
+                dashboard = dashboard,
+                onOpenActivityMedia = { activity ->
+                    val mediaId = activity.mediaId ?: return@ActivityFeedTab
+                    navigator.push(AnilistMediaDetailsScreen(mediaId))
+                },
+            )
+            2 -> CurrentTab(
+                dashboard = dashboard,
+                posterRoleColors = posterRoleColors,
+                isDarkTheme = isDarkTheme,
+                onOpenMedia = { id -> navigator.push(AnilistMediaDetailsScreen(id)) },
+                onPosterSeed = { url, seed ->
+                    if (posterRoleColors[url] == null) {
+                        posterRoleColors[url] = posterRoleColorsFromSeed(seed, isDarkTheme)
+                    }
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun DiscoverTab(
+    dashboard: AnilistApi.HomeDashboard,
+    posterRoleColors: Map<String, PosterRoleColors>,
+    isDarkTheme: Boolean,
+    notifyToggles: Map<Int, Boolean>,
+    onRetry: () -> Unit,
+    onOpenMedia: (Int) -> Unit,
+    onOpenProfile: () -> Unit,
+    onPosterSeed: (url: String, seed: Int) -> Unit,
+) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
         item {
-            PrimaryTabRow(selectedTabIndex = selectedTabIndex) {
-                homeTabs.forEachIndexed { index, tab ->
-                    Tab(
-                        selected = selectedTabIndex == index,
-                        onClick = { selectedTabIndex = index },
-                        text = { Text(tab) },
-                    )
-                }
-            }
-        }
-
-        if (selectedTabIndex == 0) {
-        item {
             TopHeaderCard(
                 dashboard = dashboard,
                 onRetry = onRetry,
-                onOpenProfile = { navigator.push(AnilistFavoritesScreen(dashboard.viewer.id)) },
+                onOpenProfile = onOpenProfile,
             )
         }
 
@@ -222,139 +273,127 @@ private fun HomeContent(
                     media = media,
                     roleColors = media.coverImageUrl?.let { posterRoleColors[it] },
                     isDarkTheme = isDarkTheme,
-                    onPosterSeed = { url, seed ->
-                        if (posterRoleColors[url] == null) {
-                            posterRoleColors[url] = posterRoleColorsFromSeed(seed, isDarkTheme)
-                        }
-                    },
-                    onClick = { navigator.push(AnilistMediaDetailsScreen(media.id)) },
+                    onPosterSeed = onPosterSeed,
+                    onClick = { onOpenMedia(media.id) },
                 )
             } ?: Spacer(modifier = Modifier.height(16.dp))
         }
 
-        item {
-            SectionHeader(
-                title = "Currently Watching",
-                actionLabel = "View All",
-            )
-        }
+        item { SectionHeader(title = "Currently Watching", actionLabel = "View All") }
 
         item {
             WatchingCarousel(
                 media = dashboard.airingMedia,
                 roleColors = posterRoleColors,
                 isDarkTheme = isDarkTheme,
-                onPosterSeed = { url, seed ->
-                    if (posterRoleColors[url] == null) {
-                        posterRoleColors[url] = posterRoleColorsFromSeed(seed, isDarkTheme)
-                    }
-                },
-                onOpenItem = { media -> navigator.push(AnilistMediaDetailsScreen(media.id)) },
+                onPosterSeed = onPosterSeed,
+                onOpenItem = { media -> onOpenMedia(media.id) },
             )
         }
 
-        item {
-            SectionHeader(
-                title = "Currently Reading",
-                actionLabel = "View All",
-            )
-        }
+        item { SectionHeader(title = "Currently Reading", actionLabel = "View All") }
 
         item {
             ReadingCarousel(
                 entries = dashboard.readingMedia,
                 roleColors = posterRoleColors,
                 isDarkTheme = isDarkTheme,
-                onPosterSeed = { url, seed ->
-                    if (posterRoleColors[url] == null) {
-                        posterRoleColors[url] = posterRoleColorsFromSeed(seed, isDarkTheme)
-                    }
-                },
-                onOpenItem = { media -> navigator.push(AnilistMediaDetailsScreen(media.id)) },
+                onPosterSeed = onPosterSeed,
+                onOpenItem = { media -> onOpenMedia(media.id) },
             )
         }
 
-        item {
-            SectionHeaderWithPager(title = "Upcoming Episodes")
-        }
+        item { SectionHeaderWithPager(title = "Upcoming Episodes") }
 
         item {
             UpcomingSection(
                 items = dashboard.airingMedia.take(5),
                 isNotified = { id -> notifyToggles[id] == true },
-                onToggleNotify = { id ->
-                    notifyToggles[id] = !(notifyToggles[id] ?: false)
-                },
-                onOpenItem = { media -> navigator.push(AnilistMediaDetailsScreen(media.id)) },
+                onToggleNotify = { _ -> },
+                onOpenItem = { media -> onOpenMedia(media.id) },
             )
         }
 
-        item {
-            SectionHeader(title = "Personal Statistics")
-        }
+        item { SectionHeader(title = "Personal Statistics") }
 
-        item {
-            StatisticsSection(dashboard = dashboard)
-        }
-        }
+        item { StatisticsSection(dashboard = dashboard) }
 
-        if (selectedTabIndex == 1) {
+        item { Spacer(modifier = Modifier.height(84.dp)) }
+    }
+}
+
+@Composable
+private fun ActivityFeedTab(
+    dashboard: AnilistApi.HomeDashboard,
+    onOpenActivityMedia: (AnilistApi.HomeActivity) -> Unit,
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        item { SectionHeaderTabs(title = "Community Feed") }
+
+        if (dashboard.activityFeed.isEmpty()) {
             item {
-                SectionHeaderTabs(title = "Community Feed")
+                Text(
+                    text = "No recent activity found for this profile.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 8.dp),
+                )
             }
-
-            item {
-                CommunityFeedSection(
-                    dashboard = dashboard,
-                    onOpenActivityMedia = { activity ->
-                        val mediaId = activity.mediaId ?: return@CommunityFeedSection
-                        navigator.push(AnilistMediaDetailsScreen(mediaId))
-                    },
+        } else {
+            items(dashboard.activityFeed) { item ->
+                ActivityCard(
+                    activity = item,
+                    onOpenMedia = { onOpenActivityMedia(item) },
                 )
             }
         }
 
-        if (selectedTabIndex == 2) {
-            item {
-                SectionHeader(title = "Currently Watching")
-            }
+        item { Spacer(modifier = Modifier.height(84.dp)) }
+    }
+}
 
-            item {
-                WatchingCarousel(
-                    media = dashboard.airingMedia,
-                    roleColors = posterRoleColors,
-                    isDarkTheme = isDarkTheme,
-                    onPosterSeed = { url, seed ->
-                        if (posterRoleColors[url] == null) {
-                            posterRoleColors[url] = posterRoleColorsFromSeed(seed, isDarkTheme)
-                        }
-                    },
-                    onOpenItem = { media -> navigator.push(AnilistMediaDetailsScreen(media.id)) },
-                )
-            }
-
-            item {
-                SectionHeader(title = "Currently Reading")
-            }
-
-            item {
-                ReadingCarousel(
-                    entries = dashboard.readingMedia,
-                    roleColors = posterRoleColors,
-                    isDarkTheme = isDarkTheme,
-                    onPosterSeed = { url, seed ->
-                        if (posterRoleColors[url] == null) {
-                            posterRoleColors[url] = posterRoleColorsFromSeed(seed, isDarkTheme)
-                        }
-                    },
-                    onOpenItem = { media -> navigator.push(AnilistMediaDetailsScreen(media.id)) },
-                )
-            }
-        }
+@Composable
+private fun CurrentTab(
+    dashboard: AnilistApi.HomeDashboard,
+    posterRoleColors: Map<String, PosterRoleColors>,
+    isDarkTheme: Boolean,
+    onOpenMedia: (Int) -> Unit,
+    onPosterSeed: (url: String, seed: Int) -> Unit,
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp),
+    ) {
+        item { SectionHeader(title = "Currently Watching", actionLabel = "View All") }
 
         item {
-            Spacer(modifier = Modifier.height(84.dp))
+            WatchingCarousel(
+                media = dashboard.airingMedia,
+                roleColors = posterRoleColors,
+                isDarkTheme = isDarkTheme,
+                onPosterSeed = onPosterSeed,
+                onOpenItem = { media -> onOpenMedia(media.id) },
+            )
         }
+
+        item { SectionHeader(title = "Currently Reading", actionLabel = "View All") }
+
+        item {
+            ReadingCarousel(
+                entries = dashboard.readingMedia,
+                roleColors = posterRoleColors,
+                isDarkTheme = isDarkTheme,
+                onPosterSeed = onPosterSeed,
+                onOpenItem = { media -> onOpenMedia(media.id) },
+            )
+        }
+
+        item { Spacer(modifier = Modifier.height(84.dp)) }
     }
 }
 
@@ -609,7 +648,7 @@ private fun WatchingCard(
         modifier = Modifier
             .fillMaxWidth()
             .height(250.dp)
-            .maskClip(MaterialTheme.shapes.large)
+            .clip(MaterialTheme.shapes.large)
             .clickable(onClick = onClick)
     ) {
         Box {
@@ -708,7 +747,7 @@ private fun ReadingCarousel(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(240.dp)
-                .maskClip(MaterialTheme.shapes.large)
+                .clip(MaterialTheme.shapes.large)
                 .clickable { onOpenItem(item) }
         ) {
             Box {
